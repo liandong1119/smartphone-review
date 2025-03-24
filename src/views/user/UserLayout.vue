@@ -156,7 +156,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ArrowDown, User, EditPen, SwitchButton, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import NotificationCenter from '@/components/NotificationCenter.vue'
-import { useUserStore } from '../stores/user'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const route = useRoute()

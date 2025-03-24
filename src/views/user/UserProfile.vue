@@ -56,7 +56,7 @@
           <div class="post-item" v-for="post in userPosts" :key="post.id">
             <div class="post-header">
               <span class="post-title">{{ post.content.substring(0, 30) }}{{ post.content.length > 30 ? '...' : '' }}</span>
-              <span class="post-date">{{ post.datetime }}</span>
+              <span class="post-date">{{ post.createTime }}</span>
             </div>
             <div class="post-preview">
               <div class="preview-image" v-if="post.images && post.images.length > 0">
@@ -235,13 +235,15 @@ const fetchUserPosts = async () => {
           mockPosts.push({
             id: postId.toString(),
             content: `这是用户${userId.value}发布的第${postId}篇评测，内容很丰富，包含了详细的使用体验和测试数据...`,
-            datetime: `2023-${Math.floor(Math.random() * 12) + 1}-${Math.floor(Math.random() * 28) + 1}`,
+            createTime: `2023-${Math.floor(Math.random() * 12) + 1}-${Math.floor(Math.random() * 28) + 1}`,
             images: [
               `https://via.placeholder.com/300/4FC3F7/FFFFFF?text=Review+${postId}`
             ],
             views: Math.floor(Math.random() * 1000),
             comments: Math.floor(Math.random() * 50),
-            likes: Math.floor(Math.random() * 100)
+            likes: Math.floor(Math.random() * 100),
+            brand: '示例品牌',
+            phoneModel: '示例型号'
           })
         }
         

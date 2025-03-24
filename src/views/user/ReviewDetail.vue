@@ -11,22 +11,40 @@
         ></el-avatar>
         <div class="user-meta">
           <span class="username clickable-username" @click="navigateToUserProfile(reviewDetail.userId)">{{ reviewDetail.username }}</span>
-          <span class="datetime">{{ reviewDetail.datetime }}</span>
+          <span class="datetime">{{ reviewDetail.createTime }}</span>
         </div>
       </div>
       
-      <!-- 评测内容 -->
-      <div class="content-text">{{ reviewDetail.content }}</div>
-      
-      <!-- 评测图片 -->
-      <div class="review-images">
-        <div 
-          v-for="(image, index) in reviewDetail.images" 
-          :key="index" 
-          class="image-item"
-          :style="{ backgroundImage: `url(${image})` }"
-          @click="viewImage(image)"
-        ></div>
+      <!-- 评测内容区域 -->
+      <div class="review-content">
+        <div class="title">{{ reviewDetail.title }}</div>
+        <div class="content-text">{{ reviewDetail.content }}</div>
+        
+        <!-- 调试信息（仅在开发环境显示） -->
+        <div v-if="isDev" class="debug-info" style="font-size: 12px; color: #999; margin: 15px 0; padding: 10px; background: #f8f8f8; border-radius: 4px;">
+          <h4>调试信息：</h4>
+          <pre>{{ JSON.stringify({ 
+            id: reviewDetail.id, 
+            userId: reviewDetail.userId,
+            username: reviewDetail.username,
+            brand: reviewDetail.brand, 
+            phoneModel: reviewDetail.phoneModel, 
+            brandId: reviewDetail.brandId, 
+            modelId: reviewDetail.modelId,
+            comments: reviewDetail.comments
+          }, null, 2) }}</pre>
+        </div>
+        
+        <!-- 图片展示区域 -->
+        <div class="images-container" v-if="reviewDetail.images && reviewDetail.images.length > 0">
+          <div 
+            v-for="(image, index) in reviewDetail.images" 
+            :key="index" 
+            class="image-item"
+            :style="{ backgroundImage: `url(${image})` }"
+            @click="viewImage(image)"
+          ></div>
+        </div>
       </div>
       
       <!-- 手机标签 -->
@@ -87,7 +105,7 @@
             <div class="comment-main">
               <el-avatar 
                 :size="32" 
-                :src="comment.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
+                :src="comment.userAvatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
                 @click="navigateToUserProfile(comment.userId)"
                 class="clickable-avatar"
               ></el-avatar>
@@ -95,7 +113,7 @@
                 <div class="comment-user clickable-username" @click="navigateToUserProfile(comment.userId)">{{ comment.username }}</div>
                 <div class="comment-content">{{ comment.content }}</div>
                 <div class="comment-actions">
-                  <span class="comment-time">{{ comment.time || '刚刚' }}</span>
+                  <span class="comment-time">{{ comment.createTime || '刚刚' }}</span>
                   <span class="reply-btn" @click="replyToComment(comment, index)">回复</span>
                   <span class="like-button" :class="{ 'liked': comment.isLiked }" @click="toggleCommentLike(comment)">
                     <span class="custom-icon thumb-icon" :class="{ 'is-liked': comment.isLiked }">👍</span>
@@ -110,7 +128,7 @@
               <div class="reply-item" v-for="(reply, replyIndex) in comment.replies" :key="replyIndex">
                 <el-avatar 
                   :size="28" 
-                  :src="reply.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
+                  :src="reply.userAvatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
                   @click="navigateToUserProfile(reply.userId)"
                   class="clickable-avatar"
                 ></el-avatar>
@@ -123,7 +141,7 @@
                   </div>
                   <div class="reply-content">{{ reply.content }}</div>
                   <div class="reply-actions">
-                    <span class="comment-time">{{ reply.time || '刚刚' }}</span>
+                    <span class="comment-time">{{ reply.createTime || '刚刚' }}</span>
                     <span class="reply-btn" @click="replyToReply(comment, reply, index)">回复</span>
                     <span class="like-button" :class="{ 'liked': reply.isLiked }" @click="toggleReplyLike(reply)">
                       <span class="custom-icon thumb-icon" :class="{ 'is-liked': reply.isLiked }">👍</span>
@@ -183,9 +201,9 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChatLineRound, Share, Star, StarFilled, CaretTop } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { usePostStore } from '../../stores/post'
-import { useUserStore } from '../../stores/user'
-import commentApi from '../../api/modules/comment'
+import { usePostStore } from '@/stores/post'
+import { useUserStore } from '@/stores/user'
+import commentApi from '@/api/modules/comment'
 
 const route = useRoute()
 const router = useRouter()
@@ -204,6 +222,16 @@ const favoriteCount = computed(() => postStore.currentPost?.favorites || 0)
 // 评测详情（从store中获取）
 const reviewDetail = computed(() => postStore.currentPost)
 const userAvatar = computed(() => userStore.userInfo?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
+
+// 添加回复相关的变量
+const replyingToIndex = ref(-1) // 当前正在回复的评论索引
+const replyToUsername = ref('') // 要回复的用户名
+const replyComment = ref('') // 回复内容
+const replyingToReply = ref(false) // 是否是回复中的回复
+const currentReplyToId = ref(null) // 当前回复的ID
+
+// 开发环境标志
+const isDev = ref(import.meta.env.DEV)
 
 // 点赞评测
 const toggleLike = async () => {
@@ -249,12 +277,17 @@ const toggleFavorite = async () => {
 const fetchComments = async () => {
   try {
     const result = await commentApi.getComments(reviewId.value)
-    if (result) {
+    if (result && result.list) {
+      commentList.value = result.list
+    } else if (Array.isArray(result)) {
       commentList.value = result
+    } else {
+      commentList.value = []
     }
   } catch (error) {
     console.error('Failed to fetch comments:', error)
     ElMessage.error('获取评论列表失败')
+    commentList.value = []
   }
 }
 
@@ -311,7 +344,16 @@ const addComment = async () => {
 }
 
 // 回复评论
-const replyComment = async (comment, replyContent, hideReplyForm) => {
+const replyToComment = (comment, index) => {
+  replyingToIndex.value = index
+  replyToUsername.value = comment.username
+  replyComment.value = ''
+  replyingToReply.value = false
+  currentReplyToId.value = comment.id
+}
+
+// 添加回复
+const addReply = async () => {
   if (!userStore.isLoggedIn) {
     ElMessageBox.confirm(
       '请先登录后再进行回复',
@@ -327,44 +369,52 @@ const replyComment = async (comment, replyContent, hideReplyForm) => {
     return
   }
   
-  if (!replyContent.trim()) {
+  if (!replyComment.value.trim()) {
     ElMessage.warning('回复内容不能为空')
     return
   }
   
   try {
+    const commentIndex = replyingToIndex.value
+    const currentComment = commentList.value[commentIndex]
+    
+    if (!currentComment) {
+      ElMessage.error('评论不存在')
+      return
+    }
+    
     const result = await commentApi.createComment(reviewId.value, {
-      content: replyContent,
-      parentId: comment.id
+      content: replyComment.value,
+      parentId: currentComment.id
     })
     
     if (result) {
       // 添加新回复到评论的回复列表
-      if (!comment.replies) {
-        comment.replies = []
+      if (!currentComment.replies) {
+        currentComment.replies = []
       }
       
-      comment.replies.push({
+      currentComment.replies.push({
         id: result.id,
-        userId: userStore.userInfo.id,
-        username: userStore.userInfo.username,
-        userAvatar: userStore.userInfo.avatar,
-        content: replyContent,
+        userId: userStore.userInfo?.id,
+        username: userStore.userInfo?.username,
+        userAvatar: userStore.userInfo?.avatar,
+        content: replyComment.value,
         createTime: new Date().toISOString(),
         likes: 0,
         isLiked: false,
-        replyTo: comment.username
+        replyTo: replyingToReply.value ? replyToUsername.value : null,
+        replyToUserId: replyingToReply.value ? currentReplyToId.value : null
       })
       
-      // 隐藏回复表单
-      if (hideReplyForm) {
-        hideReplyForm()
-      }
+      // 清空输入并隐藏回复表单
+      replyComment.value = ''
+      replyingToIndex.value = -1
       
       ElMessage.success('回复发表成功')
     }
   } catch (error) {
-    console.error('Failed to reply to comment:', error)
+    console.error('Failed to add reply:', error)
     ElMessage.error('回复发表失败')
   }
 }
@@ -555,6 +605,17 @@ const toggleReplyLike = (reply) => {
   font-size: 12px;
 }
 
+.review-content {
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10px;
+}
+
 .content-text {
   font-size: 15px;
   line-height: 1.6;
@@ -562,7 +623,7 @@ const toggleReplyLike = (reply) => {
   margin: 15px 0;
 }
 
-.review-images {
+.images-container {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;

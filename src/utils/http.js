@@ -31,9 +31,14 @@ instance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
+    
     // 开发环境打印请求日志
     if (import.meta.env.DEV) {
-      console.log(`[HTTP Request] ${config.method.toUpperCase()} ${config.url}`, config.data || config.params);
+      console.log(`[HTTP Request] ${config.method.toUpperCase()} ${config.url}`, {
+        params: config.params,
+        data: config.data,
+        headers: config.headers
+      });
     }
     
     return config;
@@ -61,7 +66,12 @@ instance.interceptors.response.use(
 
     // 开发环境打印响应日志
     if (import.meta.env.DEV) {
-      console.log(`[HTTP Response] ${response.config.method.toUpperCase()} ${response.config.url}`, res);
+      console.log(`[HTTP Response] ${response.config.method.toUpperCase()} ${response.config.url}`, {
+        status: response.status,
+        statusText: response.statusText,
+        data: res,
+        headers: response.headers
+      });
     }
     
     // 根据后端返回的状态码进行处理

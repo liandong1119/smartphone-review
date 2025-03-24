@@ -41,7 +41,7 @@
             <el-avatar :size="36" :src="post.userAvatar" @click="goToUserProfile(post)" class="clickable-avatar"></el-avatar>
             <div class="user-meta">
               <span class="username clickable-username" @click="goToUserProfile(post)">{{ post.username }}</span>
-              <span class="datetime">{{ post.datetime }}</span>
+              <span class="datetime">{{ post.createTime }}</span>
             </div>
           </div>
           <div class="content-text" @click="viewDetail(post.id)">{{ post.content }}</div>
@@ -56,6 +56,10 @@
           ></div>
         </div>
         <div class="card-footer">
+          <!-- 添加调试信息 -->
+          <div v-if="isDev" class="debug-info" style="font-size: 12px; color: #999; margin-bottom: 8px;">
+            <pre>{{ JSON.stringify({ id: post.id, brand: post.brand, phoneModel: post.phoneModel, brandId: post.brandId, modelId: post.modelId }, null, 2) }}</pre>
+          </div>
           <div class="phone-tags">
             <span class="phone-brand-tag">{{ post.brand }}</span>
             <span class="phone-model-tag">{{ post.phoneModel }}</span>
@@ -148,13 +152,16 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { ChatLineRound, Search, Share, Star, StarFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { usePostStore } from '../../stores/post'
-import { useUserStore } from '../../stores/user'
-import commentApi from '../../api/modules/comment'
+import { usePostStore } from '@/stores/post'
+import { useUserStore } from '@/stores/user'
+import commentApi from '@/api/modules/comment'
 
 const router = useRouter()
 const postStore = usePostStore()
 const userStore = useUserStore()
+
+// 是否为开发环境
+const isDev = import.meta.env.DEV
 
 // 筛选和搜索
 const currentFilter = ref('all')

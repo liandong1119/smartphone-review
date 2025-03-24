@@ -20,10 +20,8 @@ export const usePostStore = defineStore('post', () => {
 
   // 计算属性
   const displayPosts = computed(() => {
-    return postList.value.slice(
-      (currentPage.value - 1) * pageSize.value,
-      currentPage.value * pageSize.value
-    )
+    // 不再进行二次分页，直接返回接口返回的帖子列表
+    return postList.value
   })
 
   // 初始化点赞和收藏状态（从本地存储）
@@ -58,9 +56,11 @@ export const usePostStore = defineStore('post', () => {
         ...filters
       }
       
+      console.log('Fetching posts with params:', params)
       const result = await postApi.getPosts(params)
       
       if (result) {
+        console.log('Posts API raw result:', result)
         postList.value = result.records || result
         total.value = result.total || result.length
         
@@ -69,6 +69,8 @@ export const usePostStore = defineStore('post', () => {
           post.isLiked = !!likedPosts.value[post.id]
           post.isFavorited = !!favoritedPosts.value[post.id]
         })
+        
+        console.log('Processed posts:', postList.value.slice(0, 2))
       }
     } catch (error) {
       console.error('Failed to fetch posts:', error)
@@ -82,13 +84,24 @@ export const usePostStore = defineStore('post', () => {
   async function fetchPostDetail(id) {
     try {
       loading.value = true
+      console.log(`开始获取帖子详情，ID: ${id}`)
       const post = await postApi.getPostDetail(id)
       
       if (post) {
+        console.log(`获取到帖子详情:`, post)
         // 更新点赞和收藏状态
         post.isLiked = !!likedPosts.value[post.id]
         post.isFavorited = !!favoritedPosts.value[post.id]
         currentPost.value = post
+        console.log(`帖子详情处理完成，当前帖子:`, {
+          id: post.id,
+          title: post.title,
+          brand: post.brand,
+          phoneModel: post.phoneModel,
+          username: post.username
+        })
+      } else {
+        console.error(`未能获取到ID为${id}的帖子详情`)
       }
     } catch (error) {
       console.error(`Failed to fetch post detail (id: ${id}):`, error)

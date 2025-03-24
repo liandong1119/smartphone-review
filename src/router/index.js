@@ -11,6 +11,7 @@ const UserProfile = () => import('../views/user/UserProfile.vue')
 const NotificationList = () => import('../views/user/NotificationList.vue')
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
+const ForgotPassword = () => import('../views/ForgotPassword.vue')
 
 // 管理端组件
 // const AdminLayout = () => import('../views/admin/AdminLayout.vue')
@@ -33,6 +34,12 @@ const router = createRouter({
       name: 'register',
       component: Register,
       meta: { title: '注册' }
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgotPassword',
+      component: ForgotPassword,
+      meta: { title: '忘记密码' }
     },
     // 用户端路由
     {

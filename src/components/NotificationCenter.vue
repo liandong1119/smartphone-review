@@ -43,12 +43,20 @@
             :class="{ 'is-read': notification.isRead }"
             @click="handleNotificationClick(notification)"
           >
-            <div class="notification-avatar">
-              <el-avatar :size="36" :src="notification.senderAvatar"></el-avatar>
+            <div class="notification-icon">
+              <el-avatar :size="36" :src="notification.senderAvatar" v-if="notification.senderAvatar"></el-avatar>
+              <div v-else class="icon-container" :class="`icon-${notification.type || 'default'}`">
+                <el-icon v-if="notification.type === 'system'"><Bell /></el-icon>
+                <el-icon v-else-if="notification.type === 'comment' || notification.type === 'comment_reply'"><ChatLineRound /></el-icon>
+                <el-icon v-else-if="notification.type === 'post_like' || notification.type === 'comment_like'"><Star /></el-icon>
+                <el-icon v-else-if="notification.type === 'user_follow'"><User /></el-icon>
+                <el-icon v-else><InfoFilled /></el-icon>
+              </div>
             </div>
             <div class="notification-content">
+              <div class="notification-title-text" v-if="notification.title">{{ notification.title }}</div>
               <div class="notification-message" v-html="notification.content"></div>
-              <div class="notification-time">{{ notification.time }}</div>
+              <div class="notification-time">{{ formatTime(notification.createTime) }}</div>
             </div>
             <div class="notification-options">
               <el-dropdown trigger="click" @click.stop>
@@ -57,6 +65,9 @@
                   <el-dropdown-menu>
                     <el-dropdown-item v-if="!notification.isRead" @click.stop="markAsRead(notification.id)">
                       <el-icon><Check /></el-icon> 标为已读
+                    </el-dropdown-item>
+                    <el-dropdown-item v-if="notification.link" @click.stop="viewDetail(notification)">
+                      <el-icon><View /></el-icon> 查看详情
                     </el-dropdown-item>
                     <el-dropdown-item @click.stop="deleteNotification(notification.id)">
                       <el-icon><Delete /></el-icon> 删除通知
@@ -80,7 +91,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Bell, Check, Delete, MoreFilled } from '@element-plus/icons-vue'
+import { Bell, Check, Delete, MoreFilled, ChatLineRound, User, Star, InfoFilled, View } from '@element-plus/icons-vue'
 import { useNotificationStore } from '../stores/notification'
 
 const router = useRouter()
@@ -112,23 +123,44 @@ const deleteNotification = async (notificationId) => {
   await notificationStore.deleteNotification(notificationId)
 }
 
+// 格式化时间
+const formatTime = (time) => {
+  if (!time) return ''
+  
+  // 简单处理，仅显示日期
+  const date = new Date(time)
+  if (isNaN(date.getTime())) return ''
+  
+  const now = new Date()
+  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) {
+    return '今天 ' + date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0')
+  } else if (diffDays === 1) {
+    return '昨天'
+  } else if (diffDays < 7) {
+    return `${diffDays}天前`
+  } else {
+    return `${date.getMonth() + 1}月${date.getDate()}日`
+  }
+}
+
+// 查看详情
+const viewDetail = (notification) => {
+  if (notification.link) {
+    router.push(notification.link)
+  }
+}
+
 // 处理通知点击
-const handleNotificationClick = (notification) => {
+const handleNotificationClick = async (notification) => {
   if (!notification.isRead) {
-    markAsRead(notification.id)
+    await markAsRead(notification.id)
   }
   
   // 根据通知类型跳转到相应页面
-  if (notification.type === 'comment_reply') {
-    router.push(`/review/${notification.postId}`)
-  } else if (notification.type === 'post_like') {
-    router.push(`/review/${notification.postId}`)
-  } else if (notification.type === 'user_follow') {
-    router.push(`/user-profile/${notification.senderId}`)
-  } else if (notification.type === 'comment_like') {
-    router.push(`/review/${notification.postId}`)
-  } else if (notification.type === 'system') {
-    // 系统通知可能无需跳转
+  if (notification.link) {
+    router.push(notification.link)
   }
 }
 
@@ -212,18 +244,67 @@ onMounted(async () => {
   transform: translateY(-50%);
 }
 
-.notification-avatar {
+.notification-icon {
   margin-right: 12px;
+}
+
+.icon-container {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+}
+
+.icon-system {
+  background-color: #e1f3d8;
+  color: #67c23a;
+}
+
+.icon-comment, .icon-comment_reply {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.icon-post_like, .icon-comment_like {
+  background-color: #fff7e6;
+  color: #faad14;
+}
+
+.icon-user_follow {
+  background-color: #f0f2ff;
+  color: #722ed1;
+}
+
+.icon-default {
+  background-color: #f4f4f5;
+  color: #909399;
 }
 
 .notification-content {
   flex: 1;
+  min-width: 0;
+}
+
+.notification-title-text {
+  font-weight: 500;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #333;
 }
 
 .notification-message {
-  font-size: 14px;
+  font-size: 13px;
   margin-bottom: 6px;
   line-height: 1.4;
+  color: #606266;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .notification-time {
@@ -250,5 +331,9 @@ onMounted(async () => {
   text-align: center;
   border-top: 1px solid #f0f0f0;
   padding: 10px 0;
+}
+
+:deep(.el-icon) {
+  vertical-align: middle;
 }
 </style> 

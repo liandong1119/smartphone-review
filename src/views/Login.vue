@@ -34,7 +34,7 @@
           </el-form-item>
           <div class="form-options">
             <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-            <el-link type="primary" :underline="false">忘记密码?</el-link>
+            <el-link type="primary" :underline="false" @click="$router.push('/forgot-password')">忘记密码?</el-link>
           </div>
           <el-button
             type="primary"
@@ -75,8 +75,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, HomeFilled, Location, Iphone } from '@element-plus/icons-vue'
-import { useUserStore } from '../stores/user'
-import { createRules, validateUsername } from '../utils/validate'
+import { useUserStore } from '@/stores/user'
+import { createRules, validateUsername } from '@/utils/validate'
 
 const router = useRouter()
 const route = useRoute()

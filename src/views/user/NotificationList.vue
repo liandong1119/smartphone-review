@@ -5,7 +5,33 @@
         <div class="card-header">
           <h2 class="header-title">我的通知</h2>
           <div class="header-actions">
-            <el-button type="primary" plain size="small" @click="markAllAsRead" :disabled="notifications.every(n => n.isRead) || notifications.length === 0">
+            <el-button-group>
+              <el-button 
+                type="primary" 
+                :plain="activeType !== 'all'" 
+                size="small" 
+                @click="activeType = 'all'"
+              >
+                全部
+              </el-button>
+              <el-button 
+                type="primary" 
+                :plain="activeType !== 'unread'" 
+                size="small" 
+                @click="activeType = 'unread'"
+              >
+                未读
+              </el-button>
+              <el-button 
+                type="primary" 
+                :plain="activeType !== 'system'" 
+                size="small" 
+                @click="activeType = 'system'"
+              >
+                系统通知
+              </el-button>
+            </el-button-group>
+            <el-button type="success" plain size="small" @click="markAllAsRead" :disabled="!hasUnread">
               全部标为已读
             </el-button>
           </div>
@@ -16,25 +42,34 @@
         <el-skeleton :rows="10" animated />
       </div>
       
-      <div v-else-if="notifications.length === 0" class="empty-state">
+      <div v-else-if="filteredNotifications.length === 0" class="empty-state">
         <el-empty description="暂无通知消息" />
       </div>
       
       <div v-else class="notification-list">
         <div 
-          v-for="notification in notifications" 
+          v-for="notification in filteredNotifications" 
           :key="notification.id" 
           class="notification-item"
           :class="{ 'is-read': notification.isRead }"
         >
           <div class="notification-content" @click="handleNotificationClick(notification)">
-            <div class="notification-avatar">
-              <el-avatar :size="40" :src="notification.senderAvatar"></el-avatar>
+            <div class="notification-icon">
+              <el-avatar :size="40" :src="notification.senderAvatar" v-if="notification.senderAvatar"></el-avatar>
+              <div v-else class="icon-container" :class="`icon-${notification.type || 'default'}`">
+                <el-icon v-if="notification.type === 'system'"><Bell /></el-icon>
+                <el-icon v-else-if="notification.type === 'comment' || notification.type === 'comment_reply'"><ChatLineRound /></el-icon>
+                <el-icon v-else-if="notification.type === 'post_like' || notification.type === 'comment_like'"><Star /></el-icon>
+                <el-icon v-else-if="notification.type === 'user_follow'"><User /></el-icon>
+                <el-icon v-else><InfoFilled /></el-icon>
+              </div>
             </div>
             <div class="notification-info">
+              <div class="notification-title" v-if="notification.title">{{ notification.title }}</div>
               <div class="notification-message" v-html="notification.content"></div>
               <div class="notification-meta">
-                <span class="notification-time">{{ notification.time }}</span>
+                <span class="notification-type" v-if="notification.type">{{ getTypeLabel(notification.type) }}</span>
+                <span class="notification-time">{{ formatTime(notification.createTime) }}</span>
                 <span v-if="!notification.isRead" class="unread-badge">未读</span>
               </div>
             </div>
@@ -45,15 +80,24 @@
               type="primary" 
               plain 
               size="small" 
-              @click="markAsRead(notification.id)"
+              @click.stop="markAsRead(notification.id)"
             >
               标为已读
+            </el-button>
+            <el-button 
+              v-if="notification.link"
+              type="success" 
+              plain 
+              size="small" 
+              @click.stop="viewDetail(notification)"
+            >
+              查看详情
             </el-button>
             <el-button 
               type="danger" 
               plain 
               size="small" 
-              @click="deleteNotification(notification.id)"
+              @click.stop="confirmDelete(notification.id)"
             >
               删除
             </el-button>
@@ -62,7 +106,7 @@
       </div>
       
       <!-- 分页 -->
-      <div class="pagination-container" v-if="notifications.length > 0">
+      <div class="pagination-container" v-if="filteredNotifications.length > 0">
         <el-pagination
           background
           layout="prev, pager, next"
@@ -77,200 +121,140 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { notificationApi } from '../../api'
+import { useNotificationStore } from '@/stores/notification'
+import { Bell, ChatLineRound, Star, User, InfoFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
-const notifications = ref([])
-const loading = ref(true)
-const currentPage = ref(1)
-const pageSize = ref(10)
-const totalNotifications = ref(0)
+const notificationStore = useNotificationStore()
+const activeType = ref('all')
+
+// 计算属性
+const notifications = computed(() => notificationStore.notifications)
+const loading = computed(() => notificationStore.loading)
+const currentPage = computed({
+  get: () => notificationStore.currentPage,
+  set: (val) => notificationStore.setPagination(val)
+})
+const pageSize = computed(() => notificationStore.pageSize)
+const totalNotifications = computed(() => notificationStore.total)
+const hasUnread = computed(() => notifications.value.some(n => !n.isRead))
+
+// 筛选通知
+const filteredNotifications = computed(() => {
+  if (activeType.value === 'all') {
+    return notifications.value;
+  } else if (activeType.value === 'unread') {
+    return notifications.value.filter(n => !n.isRead);
+  } else if (activeType.value === 'system') {
+    return notifications.value.filter(n => n.type === 'system');
+  }
+  return notifications.value;
+})
+
+// 获取通知类型的文本标签
+const getTypeLabel = (type) => {
+  switch (type) {
+    case 'system': return '系统通知';
+    case 'comment': return '评论通知';
+    case 'comment_reply': return '回复通知';
+    case 'post_like': return '点赞通知';
+    case 'comment_like': return '评论点赞';
+    case 'user_follow': return '关注通知';
+    default: return '通知';
+  }
+}
+
+// 格式化时间
+const formatTime = (time) => {
+  if (!time) return ''
+  
+  // 简单处理，仅显示日期
+  const date = new Date(time)
+  if (isNaN(date.getTime())) return ''
+  
+  const now = new Date()
+  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) {
+    return '今天 ' + date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0')
+  } else if (diffDays === 1) {
+    return '昨天'
+  } else if (diffDays < 7) {
+    return `${diffDays}天前`
+  } else {
+    return `${date.getMonth() + 1}月${date.getDate()}日`
+  }
+}
 
 // 获取通知列表
 const fetchNotifications = async () => {
-  loading.value = true
-  try {
-    // 实际环境下调用API
-    // const response = await notificationApi.getNotifications({ 
-    //   page: currentPage.value, 
-    //   limit: pageSize.value 
-    // })
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    const mockData = generateMockNotifications()
-    const startIndex = (currentPage.value - 1) * pageSize.value
-    const endIndex = startIndex + pageSize.value
-    
-    notifications.value = mockData.slice(startIndex, endIndex)
-    totalNotifications.value = mockData.length
-    
-    loading.value = false
-  } catch (error) {
-    console.error('获取通知失败', error)
-    ElMessage.error('获取通知失败')
-    loading.value = false
-  }
+  await notificationStore.fetchNotifications()
 }
 
-// 标记通知为已读
+// 标记为已读
 const markAsRead = async (notificationId) => {
-  try {
-    // 实际环境下调用API
-    // await notificationApi.markAsRead(notificationId)
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // 更新本地状态
-    const notification = notifications.value.find(n => n.id === notificationId)
-    if (notification) {
-      notification.isRead = true
-    }
-    
-    ElMessage.success('已标记为已读')
-  } catch (error) {
-    ElMessage.error('操作失败')
-    console.error('标记已读失败', error)
-  }
+  await notificationStore.markAsRead(notificationId)
+  ElMessage.success('已标记为已读')
 }
 
-// 标记所有通知为已读
+// 标记全部已读
 const markAllAsRead = async () => {
-  ElMessageBox.confirm('确定要将所有通知标记为已读吗？', '提示', {
+  ElMessageBox.confirm('确定要将所有通知标记为已读吗?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'info'
   }).then(async () => {
-    try {
-      // 实际环境下调用API
-      // await notificationApi.markAllAsRead()
-      
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // 更新本地状态
-      notifications.value.forEach(notification => {
-        notification.isRead = true
-      })
-      
-      ElMessage.success('全部标记为已读')
-    } catch (error) {
-      ElMessage.error('操作失败')
-      console.error('标记全部已读失败', error)
-    }
-  }).catch(() => {
-    // 用户取消操作
-  })
+    await notificationStore.markAllAsRead()
+    ElMessage.success('所有通知已标记为已读')
+  }).catch(() => {})
 }
 
-// 删除通知
-const deleteNotification = async (notificationId) => {
-  ElMessageBox.confirm('确定要删除此通知吗？', '警告', {
+// 确认删除
+const confirmDelete = (notificationId) => {
+  ElMessageBox.confirm('确定要删除这条通知吗?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(async () => {
-    try {
-      // 实际环境下调用API
-      // await notificationApi.deleteNotification(notificationId)
-      
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      // 更新本地状态
-      const index = notifications.value.findIndex(n => n.id === notificationId)
-      if (index !== -1) {
-        notifications.value.splice(index, 1)
-      }
-      
-      ElMessage.success('通知已删除')
-    } catch (error) {
-      ElMessage.error('删除失败')
-      console.error('删除通知失败', error)
-    }
-  }).catch(() => {
-    // 用户取消操作
-  })
+    await notificationStore.deleteNotification(notificationId)
+    ElMessage.success('通知已删除')
+  }).catch(() => {})
+}
+
+// 查看详情
+const viewDetail = (notification) => {
+  if (notification.link) {
+    router.push(notification.link)
+  }
 }
 
 // 处理通知点击
-const handleNotificationClick = (notification) => {
+const handleNotificationClick = async (notification) => {
   if (!notification.isRead) {
-    markAsRead(notification.id)
+    await markAsRead(notification.id)
   }
   
-  // 根据通知类型跳转到相应页面
-  if (notification.type === 'comment_reply' || notification.type === 'post_like') {
-    router.push(`/review/${notification.postId}`)
-  } else if (notification.type === 'user_follow') {
-    router.push(`/user-profile/${notification.senderId}`)
+  if (notification.link) {
+    router.push(notification.link)
   }
 }
 
-// 处理分页变化
+// 分页变化
 const handlePageChange = (page) => {
   currentPage.value = page
   fetchNotifications()
 }
 
-// 生成模拟通知数据
-const generateMockNotifications = () => {
-  const notifications = []
-  
-  // 评论回复通知
-  for (let i = 1; i <= 7; i++) {
-    notifications.push({
-      id: `comment_${i}`,
-      type: 'comment_reply',
-      content: `<strong>用户${i}</strong> 回复了你的评论：这是第${i}条回复，感谢您的分享！`,
-      senderAvatar: `https://cube.elemecdn.com/${i % 3}/88/03b0d39583f48206768a7534e55bcpng.png`,
-      senderId: `user_${100 + i}`,
-      postId: `${i % 5 + 1}`,
-      time: i <= 2 ? `${i}小时前` : `${i-2}天前`,
-      isRead: i > 3
-    })
-  }
-  
-  // 点赞通知
-  for (let i = 1; i <= 5; i++) {
-    notifications.push({
-      id: `like_${i}`,
-      type: 'post_like',
-      content: `<strong>点赞用户${i}</strong> 赞了你的评测文章《手机评测${i}》`,
-      senderAvatar: `https://cube.elemecdn.com/${(i+1) % 3}/88/03b0d39583f48206768a7534e55bcpng.png`,
-      senderId: `user_${200 + i}`,
-      postId: `${i % 5 + 1}`,
-      time: i <= 2 ? `${i+3}小时前` : `${i}天前`,
-      isRead: i > 2
-    })
-  }
-  
-  // 关注通知
-  for (let i = 1; i <= 3; i++) {
-    notifications.push({
-      id: `follow_${i}`,
-      type: 'user_follow',
-      content: `<strong>关注用户${i}</strong> 关注了你`,
-      senderAvatar: `https://cube.elemecdn.com/${(i+2) % 3}/88/03b0d39583f48206768a7534e55bcpng.png`,
-      senderId: `user_${300 + i}`,
-      time: `${i+5}天前`,
-      isRead: true
-    })
-  }
-  
-  // 按时间排序，最新的在前
-  return notifications.sort((a, b) => {
-    const aTime = a.time.includes('小时') ? parseInt(a.time) : parseInt(a.time) * 24
-    const bTime = b.time.includes('小时') ? parseInt(b.time) : parseInt(b.time) * 24
-    return aTime - bTime
-  })
-}
+// 监听类型变化
+watch(activeType, () => {
+  currentPage.value = 1
+  fetchNotifications()
+})
 
+// 初始化
 onMounted(() => {
   fetchNotifications()
 })
@@ -294,31 +278,32 @@ onMounted(() => {
 .header-title {
   margin: 0;
   font-size: 18px;
-  font-weight: bold;
 }
 
-.loading-state,
-.empty-state {
-  padding: 40px 0;
-  text-align: center;
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .notification-list {
-  display: flex;
-  flex-direction: column;
+  margin-top: 20px;
 }
 
 .notification-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
+  padding: 15px;
   border-bottom: 1px solid #f0f0f0;
-  position: relative;
+  transition: background-color 0.3s;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .notification-item:last-child {
   border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: #f5f7fa;
 }
 
 .notification-item.is-read {
@@ -331,46 +316,100 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.notification-content:hover {
-  opacity: 0.9;
+.notification-icon {
+  margin-right: 15px;
+  flex-shrink: 0;
 }
 
-.notification-avatar {
-  margin-right: 16px;
+.icon-container {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  font-size: 18px;
+}
+
+.icon-system {
+  background-color: #e1f3d8;
+  color: #67c23a;
+}
+
+.icon-comment, .icon-comment_reply {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.icon-post_like, .icon-comment_like {
+  background-color: #fff7e6;
+  color: #faad14;
+}
+
+.icon-user_follow {
+  background-color: #f0f2ff;
+  color: #722ed1;
+}
+
+.icon-default {
+  background-color: #f4f4f5;
+  color: #909399;
 }
 
 .notification-info {
   flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-weight: 500;
+  margin-bottom: 5px;
+  font-size: 15px;
+  color: #333;
 }
 
 .notification-message {
-  font-size: 14px;
   margin-bottom: 8px;
+  font-size: 14px;
+  color: #606266;
   line-height: 1.5;
 }
 
 .notification-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.notification-time {
+  gap: 10px;
   font-size: 12px;
   color: #909399;
 }
 
-.unread-badge {
-  font-size: 12px;
-  background-color: #409EFF;
-  color: white;
+.notification-type {
+  background-color: #f0f0f0;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: 4px;
+}
+
+.notification-time {
+  color: #909399;
+}
+
+.unread-badge {
+  color: #f56c6c;
+  font-weight: bold;
 }
 
 .notification-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
+  min-width: 90px;
+}
+
+.loading-state,
+.empty-state {
+  padding: 40px 0;
+  text-align: center;
 }
 
 .pagination-container {
@@ -380,6 +419,17 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
   .notification-item {
     flex-direction: column;
     align-items: flex-start;
@@ -392,6 +442,7 @@ onMounted(() => {
   
   .notification-actions {
     align-self: flex-end;
+    flex-direction: row;
   }
 }
 </style> 

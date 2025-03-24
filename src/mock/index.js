@@ -226,14 +226,177 @@ const announcements = [
 export function createMockServer() {
   return createServer({
     seeds(server) {
+      console.log('正在初始化模拟数据...');
+      
+      // 修复ID到数字类型
+      const fixedBrands = brands.map(brand => ({
+        ...brand,
+        id: parseInt(brand.id)
+      }));
+      
+      const fixedPhoneModels = phoneModels.map(model => ({
+        ...model,
+        id: parseInt(model.id),
+        brandId: parseInt(model.brandId)
+      }));
+
+      const fixedUsers = users.map(user => ({
+        ...user,
+        id: parseInt(user.id)
+      }));
+
+      const fixedPosts = posts.map(post => ({
+        ...post,
+        id: parseInt(post.id),
+        userId: parseInt(post.userId),
+        brandId: parseInt(post.brandId),
+        modelId: parseInt(post.modelId),
+        createTime: post.createTime || new Date().toISOString()
+      }));
+
+      const fixedComments = comments.map(comment => ({
+        ...comment,
+        id: parseInt(comment.id),
+        postId: parseInt(comment.postId),
+        userId: parseInt(comment.userId),
+        createTime: comment.createTime || new Date().toISOString()
+      }));
+
+      // 初始化通知数据
+      const notifications = [
+        { 
+          id: 1, 
+          userId: 1, 
+          title: '评论回复通知',
+          content: '<strong>用户二</strong>回复了您对<strong>iPhone 15 Pro</strong>的评论: "完全没问题，轻度使用能撑两天"', 
+          type: 'comment_reply', 
+          postId: 1,
+          commentId: 2,
+          senderId: 2,
+          senderAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+          isRead: false, 
+          link: '/review/1',
+          createTime: '2023-09-15 14:30:00'
+        },
+        { 
+          id: 2, 
+          userId: 1, 
+          title: '点赞通知',
+          content: '<strong>用户二</strong>点赞了您的<strong>华为Mate60 Pro</strong>评测文章', 
+          type: 'post_like', 
+          postId: 3,
+          senderId: 2,
+          senderAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+          isRead: true, 
+          link: '/review/3',
+          createTime: '2023-09-13 09:45:00'
+        },
+        { 
+          id: 3, 
+          userId: 1, 
+          title: '系统通知',
+          content: '您的账号已完成实名认证，现在可以使用全部功能了', 
+          type: 'system', 
+          senderAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+          isRead: false, 
+          createTime: '2023-09-12 10:30:00'
+        },
+        { 
+          id: 4, 
+          userId: 1, 
+          title: '评论通知',
+          content: '<strong>用户二</strong>评论了您的<strong>iPhone 15 Pro</strong>评测: "夜景样张可以分享一下吗？听说有很大进步"', 
+          type: 'comment', 
+          postId: 1,
+          commentId: 3,
+          senderId: 2,
+          senderAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+          isRead: false, 
+          link: '/review/1',
+          createTime: '2023-09-15 11:20:00'
+        },
+        { 
+          id: 5, 
+          userId: 1, 
+          title: '关注通知',
+          content: '<strong>用户二</strong>关注了您', 
+          type: 'user_follow', 
+          senderId: 2,
+          senderAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+          isRead: false, 
+          link: '/user-profile/2',
+          createTime: '2023-09-10 16:20:00'
+        },
+        { 
+          id: 6, 
+          userId: 1, 
+          title: '点赞通知',
+          content: '<strong>用户二</strong>点赞了您对<strong>华为Mate60 Pro</strong>的评论', 
+          type: 'comment_like', 
+          postId: 3,
+          commentId: 10,
+          senderId: 2,
+          senderAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+          isRead: true, 
+          link: '/review/3',
+          createTime: '2023-09-08 08:15:00'
+        },
+        { 
+          id: 7, 
+          userId: 1, 
+          title: '系统通知',
+          content: '智能手机评测论坛已上线全新版本，新增了更多功能，欢迎体验！', 
+          type: 'system', 
+          senderAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+          isRead: true, 
+          createTime: '2023-09-01 00:00:00'
+        }
+      ];
+
+      console.log(`初始化的数据统计：
+        品牌: ${fixedBrands.length} 条
+        手机型号: ${fixedPhoneModels.length} 条
+        用户: ${fixedUsers.length} 条
+        帖子: ${fixedPosts.length} 条
+        评论: ${fixedComments.length} 条
+        通知: ${notifications.length} 条
+      `);
+
+      // 打印一些数据样本进行确认
+      console.log('品牌样本:', fixedBrands.slice(0, 2));
+      console.log('型号样本:', fixedPhoneModels.slice(0, 2));
+      console.log('用户样本:', fixedUsers.slice(0, 2));
+      console.log('帖子样本:', fixedPosts.slice(0, 2));
+
+      // 加载数据到服务器
       server.db.loadData({
-        users,
-        posts,
-        comments,
-        brands,
-        phoneModels,
-        announcements
+        brands: fixedBrands,
+        phoneModels: fixedPhoneModels,
+        users: fixedUsers,
+        posts: fixedPosts,
+        comments: fixedComments,
+        notifications: notifications
       });
+
+      console.log('模拟数据初始化完成');
+      
+      // 打印数据库表名和记录数
+      console.log('数据库表信息:', {
+        brands: server.db.brands.length,
+        phoneModels: server.db.phoneModels.length,
+        users: server.db.users.length,
+        posts: server.db.posts.length,
+        comments: server.db.comments.length
+      });
+      
+      // 打印第一个品牌和型号，验证数据结构
+      if (server.db.brands.length > 0) {
+        console.log('第一个品牌示例:', server.db.brands[0]);
+      }
+      
+      if (server.db.phoneModels.length > 0) {
+        console.log('第一个型号示例:', server.db.phoneModels[0]);
+      }
     },
 
     routes() {
@@ -248,7 +411,19 @@ export function createMockServer() {
 
       this.get('/user/stats', (schema, request) => {
         // 返回用户统计数据
-        return schema.db.users[0].stats;
+        const userStats = {
+          postsCount: 12,
+          commentsCount: 48,
+          likesCount: 128,
+          followersCount: 34,
+          followingCount: 56
+        };
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: userStats
+        };
       });
 
       this.post('/user/login', (schema, request) => {
@@ -291,9 +466,147 @@ export function createMockServer() {
         };
       });
 
+      // 用户发布的评测
+      this.get('/user/posts', (schema, request) => {
+        const { page = 1, pageSize = 10 } = request.queryParams;
+        
+        // 获取当前用户的评测
+        let userPosts = schema.db.posts.filter(p => p.userId === 1);
+        
+        // 按时间排序（最新的在前）
+        userPosts = userPosts.sort((a, b) => 
+          new Date(b.createTime) - new Date(a.createTime)
+        );
+        
+        // 分页
+        const start = (page - 1) * pageSize;
+        const end = start + parseInt(pageSize);
+        const paginatedPosts = userPosts.slice(start, end);
+        
+        // 关联用户和手机信息
+        const postsWithDetails = paginatedPosts.map(post => {
+          const user = schema.db.users.find(u => u.id === post.userId);
+          
+          // 确保 brandId 和 modelId 是有效的数字
+          const brandId = typeof post.brandId === 'number' ? post.brandId : parseInt(post.brandId);
+          const modelId = typeof post.modelId === 'number' ? post.modelId : parseInt(post.modelId);
+          
+          // 修改查找方式，确保正确比较ID
+          const brand = schema.db.brands.findBy({ id: brandId });
+          const model = schema.db.phoneModels.findBy({ id: modelId });
+          
+          console.log(`处理帖子 ID=${post.id}:`, { 
+            userId: post.userId,
+            userFound: !!user,
+            username: user?.username || 'Unknown',
+            brandId, 
+            modelId,
+            brandFound: !!brand,
+            modelFound: !!model,
+            brand: brand?.name || 'Unknown Brand', 
+            model: model?.name || 'Unknown Model' 
+          });
+          
+          // 构建帖子详情
+          const postDetail = {
+            ...post,
+            username: user?.username || 'Unknown',
+            userAvatar: user?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+          };
+          
+          // 添加品牌和型号信息
+          if (brand) {
+            postDetail.brand = brand.name;
+            // 保留brandId用于调试
+            postDetail.brandId = brandId;
+          } else {
+            postDetail.brand = 'Unknown Brand';
+            postDetail.brandId = brandId;
+            console.warn(`找不到帖子(ID=${post.id})的品牌(brandId=${brandId})`);
+          }
+          
+          if (model) {
+            postDetail.phoneModel = model.name;
+            // 保留modelId用于调试
+            postDetail.modelId = modelId;
+          } else {
+            postDetail.phoneModel = 'Unknown Model';
+            postDetail.modelId = modelId;
+            console.warn(`找不到帖子(ID=${post.id})的型号(modelId=${modelId})`);
+          }
+          
+          return postDetail;
+        });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: {
+            records: postsWithDetails,
+            total: userPosts.length,
+            page: parseInt(page),
+            pageSize: parseInt(pageSize)
+          }
+        };
+      });
+      
+      // 用户收藏的评测
+      this.get('/user/favorites', (schema, request) => {
+        const { page = 1, pageSize = 10 } = request.queryParams;
+        
+        // 模拟收藏的帖子（随机选择3个）
+        let favoritePosts = schema.db.posts.filter(p => p.id % 3 === 0);
+        
+        // 按时间排序
+        favoritePosts = favoritePosts.sort((a, b) => 
+          new Date(b.createTime) - new Date(a.createTime)
+        );
+        
+        // 分页
+        const start = (page - 1) * pageSize;
+        const end = start + parseInt(pageSize);
+        const paginatedPosts = favoritePosts.slice(start, end);
+        
+        // 关联用户和手机信息
+        const postsWithDetails = paginatedPosts.map(post => {
+          const user = schema.db.users.find(u => u.id === post.userId);
+          const brand = schema.db.brands.find(b => b.id === post.brandId);
+          const model = schema.db.phoneModels.find(m => m.id === post.modelId);
+          
+          return {
+            ...post,
+            username: user?.username || 'Unknown',
+            userAvatar: user?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+            brand: brand?.name || 'Unknown Brand',
+            phoneModel: model?.name || 'Unknown Model'
+          };
+        });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: {
+            records: postsWithDetails,
+            total: favoritePosts.length,
+            page: parseInt(page),
+            pageSize: parseInt(pageSize)
+          }
+        };
+      });
+
       // 评测帖子相关接口
       this.get('/posts', (schema, request) => {
-        const { filter, search, page = 1, limit = 10 } = request.queryParams;
+        // 获取查询参数
+        const queryParams = request.queryParams;
+        const page = parseInt(queryParams['page'] || queryParams['params[page]'] || 1);
+        const pageSize = parseInt(queryParams['pageSize'] || queryParams['params[pageSize]'] || 10);
+        const sortBy = queryParams['sortBy'] || queryParams['params[sortBy]'] || 'createTime';
+        const sortOrder = queryParams['sortOrder'] || queryParams['params[sortOrder]'] || 'desc';
+        const filter = queryParams['filter'] || queryParams['params[filter]'];
+        const search = queryParams['search'] || queryParams['params[search]'];
+        
+        console.log('请求参数:', { page, pageSize, sortBy, sortOrder, filter, search });
+        
         let filteredPosts = schema.db.posts;
         
         // 筛选
@@ -308,89 +621,140 @@ export function createMockServer() {
         // 搜索
         if (search) {
           filteredPosts = filteredPosts.filter(post => 
-            post.title.includes(search) || post.content.includes(search)
+            post.title?.includes(search) || post.content?.includes(search)
           );
         }
         
+        // 排序
+        if (sortBy && sortOrder) {
+          filteredPosts = filteredPosts.sort((a, b) => {
+            if (sortOrder.toLowerCase() === 'desc') {
+              return b[sortBy] > a[sortBy] ? 1 : -1;
+            } else {
+              return a[sortBy] > b[sortBy] ? 1 : -1;
+            }
+          });
+        }
+        
         // 分页
-        const start = (page - 1) * limit;
-        const end = start + parseInt(limit);
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize;
         const paginatedPosts = filteredPosts.slice(start, end);
         
         // 关联用户和手机信息
         const postsWithDetails = paginatedPosts.map(post => {
-          const user = schema.db.users.find(u => u.id === post.userId);
-          const brand = schema.db.brands.find(b => b.id === post.brandId);
-          const model = schema.db.phoneModels.find(m => m.id === post.modelId);
+          const userId = parseInt(post.userId);
+          const brandId = parseInt(post.brandId);
+          const modelId = parseInt(post.modelId);
           
+          // 查找用户
+          const user = schema.db.users.findBy({ id: userId });
+          // 查找品牌
+          const brand = schema.db.brands.findBy({ id: brandId });
+          // 查找型号
+          const model = schema.db.phoneModels.findBy({ id: modelId });
+          
+          console.log(`处理帖子 ID=${post.id}，查找用户 ID=${userId}，用户: ${user ? '找到' : '未找到'}`);
+          console.log(`处理帖子 ID=${post.id}，查找品牌 ID=${brandId}，品牌: ${brand ? '找到' : '未找到'}`);
+          console.log(`处理帖子 ID=${post.id}，查找型号 ID=${modelId}，型号: ${model ? '找到' : '未找到'}`);
+
+          // 返回带有关联数据的详细信息
           return {
             ...post,
-            user: {
-              id: user.id,
-              username: user.username,
-              avatar: user.avatar
-            },
-            brand: brand.name,
-            phoneModel: model.name
+            username: user?.username || 'Unknown',
+            userAvatar: user?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+            brand: brand?.name || 'Unknown Brand',
+            phoneModel: model?.name || 'Unknown Model',
+            brandId: brandId,
+            modelId: modelId,
+            createTime: post.createTime || new Date().toISOString()
           };
         });
         
-        return {
+        const result = {
           code: 200,
           message: '获取成功',
           data: {
-            list: postsWithDetails,
+            records: postsWithDetails,
             total: filteredPosts.length,
-            page: parseInt(page),
-            limit: parseInt(limit)
+            page: page,
+            pageSize: pageSize
           }
         };
+        
+        console.log('Posts API 返回结果:', JSON.stringify(result.data.records.slice(0, 2), null, 2));
+        
+        return result;
       });
 
       this.get('/posts/:id', (schema, request) => {
-        const id = request.params.id;
-        const post = schema.db.posts.find(id);
+        const postId = parseInt(request.params.id);
+        console.log(`获取帖子详情，ID=${postId}`);
+        
+        // 查找帖子
+        const post = schema.db.posts.findBy({ id: postId });
         
         if (!post) {
-          return {
-            code: 404,
-            message: '评测不存在'
-          };
+          console.log(`帖子不存在，ID=${postId}`);
+          return { code: 404, message: '帖子不存在' };
         }
         
-        const user = schema.db.users.find(post.userId);
-        const brand = schema.db.brands.find(post.brandId);
-        const model = schema.db.phoneModels.find(post.modelId);
-        const postComments = schema.db.comments.filter(c => c.postId === parseInt(id));
+        // 获取用户、品牌和型号信息
+        const userId = parseInt(post.userId);
+        const brandId = parseInt(post.brandId);
+        const modelId = parseInt(post.modelId);
         
-        // 构建评论列表，包含用户信息
-        const commentsWithUser = postComments.map(comment => {
-          const commentUser = schema.db.users.find(comment.userId);
+        // 查找用户
+        const user = schema.db.users.findBy({ id: userId });
+        // 查找品牌
+        const brand = schema.db.brands.findBy({ id: brandId });
+        // 查找型号
+        const model = schema.db.phoneModels.findBy({ id: modelId });
+        
+        console.log(`帖子详情 ID=${postId}，查找用户 ID=${userId}，用户: ${user ? '找到' : '未找到'}`);
+        console.log(`帖子详情 ID=${postId}，查找品牌 ID=${brandId}，品牌: ${brand ? brand.name : '未找到'}`);
+        console.log(`帖子详情 ID=${postId}，查找型号 ID=${modelId}，型号: ${model ? model.name : '未找到'}`);
+        
+        // 获取评论列表
+        const commentsData = schema.db.comments.where({ postId }).sort((a, b) => {
+          return new Date(b.createTime) - new Date(a.createTime);
+        });
+        
+        // 为每条评论关联用户信息
+        const commentsWithUser = commentsData.map(comment => {
+          const commentUserId = parseInt(comment.userId);
+          const commentUser = schema.db.users.findBy({ id: commentUserId });
+          
           return {
             ...comment,
-            user: {
-              id: commentUser.id,
-              username: commentUser.username,
-              avatar: commentUser.avatar
-            }
+            user: commentUser || { id: 0, username: 'Unknown User', avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png' }
           };
         });
+        
+        // 构建返回数据
+        const result = {
+          ...post,
+          username: user?.username || 'Unknown',
+          userAvatar: user?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+          brand: brand?.name || 'Unknown Brand',
+          phoneModel: model?.name || 'Unknown Model',
+          brandId: brandId,
+          modelId: modelId,
+          comments: commentsWithUser.length,
+          commentList: commentsWithUser.map(comment => ({
+            ...comment,
+            username: comment.user?.username,
+            userAvatar: comment.user?.avatar,
+            // 保留 user 对象以保持向后兼容性
+          }))
+        };
+        
+        console.log(`返回帖子详情数据：ID=${postId}, 评论数=${commentsWithUser.length}`);
         
         return {
           code: 200,
           message: '获取成功',
-          data: {
-            ...post,
-            user: {
-              id: user.id,
-              username: user.username,
-              avatar: user.avatar,
-              signature: user.signature
-            },
-            brand: brand.name,
-            phoneModel: model.name,
-            comments: commentsWithUser
-          }
+          data: result
         };
       });
 
@@ -448,33 +812,29 @@ export function createMockServer() {
       });
 
       // 评论相关接口
-      this.get('/posts/:postId/comments', (schema, request) => {
-        const postId = parseInt(request.params.postId);
+      this.get('/posts/:id/comments', (schema, request) => {
+        const postId = parseInt(request.params.id);
         const { page = 1, limit = 20 } = request.queryParams;
         
-        // 获取评论
-        let postComments = schema.db.comments.filter(c => c.postId === postId);
-        
-        // 按时间排序
-        postComments = postComments.sort((a, b) => 
-          new Date(b.createTime) - new Date(a.createTime)
-        );
-        
-        // 分页
-        const start = (page - 1) * limit;
-        const end = start + parseInt(limit);
-        const paginatedComments = postComments.slice(start, end);
+        // 获取所有该帖子的评论
+        const comments = schema.db.comments.where({ postId });
+        const total = comments.length;
         
         // 关联用户信息
-        const commentsWithUser = paginatedComments.map(comment => {
-          const user = schema.db.users.find(u => u.id === comment.userId);
+        const commentsWithUser = comments.map(comment => {
+          const userId = parseInt(comment.userId);
+          const user = schema.db.users.findBy({ id: userId });
+          
           return {
             ...comment,
-            user: {
+            username: user?.username || 'Unknown User',
+            userAvatar: user?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+            // 保留 user 对象以保持向后兼容性
+            user: user ? {
               id: user.id,
               username: user.username,
               avatar: user.avatar
-            }
+            } : null
           };
         });
         
@@ -483,7 +843,7 @@ export function createMockServer() {
           message: '获取成功',
           data: {
             list: commentsWithUser,
-            total: postComments.length,
+            total,
             page: parseInt(page),
             limit: parseInt(limit)
           }
@@ -538,23 +898,61 @@ export function createMockServer() {
         };
       });
 
-      // 品牌相关接口
+      // 手机品牌和型号相关API
       this.get('/brands', (schema, request) => {
-        return {
-          code: 200,
-          message: '获取成功',
-          data: schema.db.brands
-        };
-      });
-
-      this.get('/brands/:brandId/models', (schema, request) => {
-        const brandId = parseInt(request.params.brandId);
-        const models = schema.db.phoneModels.filter(model => model.brandId === brandId);
+        const brandsList = schema.db.brands;
+        console.log('获取所有品牌列表:', { count: brandsList.length });
         
         return {
           code: 200,
           message: '获取成功',
-          data: models
+          data: brandsList
+        };
+      });
+      
+      this.get('/brands/:id/models', (schema, request) => {
+        const brandId = parseInt(request.params.id);
+        const modelsList = schema.db.phoneModels.where({ brandId });
+        
+        console.log(`获取品牌(ID=${brandId})的型号列表:`, { count: modelsList.length });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: modelsList
+        };
+      });
+      
+      this.get('/phones/hot', (schema, request) => {
+        // 返回热门手机型号（随机选择5个）
+        const allModels = schema.db.phoneModels;
+        const hotModels = [];
+        
+        // 确保至少返回5个或全部（如果总数少于5个）
+        const count = Math.min(5, allModels.length);
+        
+        // 随机选择不重复的型号
+        const indices = new Set();
+        while (indices.size < count) {
+          const randomIndex = Math.floor(Math.random() * allModels.length);
+          indices.add(randomIndex);
+        }
+        
+        // 构建热门型号列表
+        indices.forEach(index => {
+          const model = allModels[index];
+          const brand = schema.db.brands.findBy({ id: model.brandId });
+          
+          hotModels.push({
+            ...model,
+            brandName: brand?.name || 'Unknown Brand'
+          });
+        });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: hotModels
         };
       });
 
@@ -600,6 +998,133 @@ export function createMockServer() {
           code: 200,
           message: '搜索成功',
           data: postsWithDetails
+        };
+      });
+
+      // 通知相关接口
+      this.get('/notifications', (schema, request) => {
+        const { page = 1, pageSize = 10 } = request.queryParams;
+        
+        // 获取当前用户的通知
+        let userNotifications = schema.db.notifications.filter(n => n.userId === 1);
+        
+        // 按时间排序（最新的在前）
+        userNotifications = userNotifications.sort((a, b) => 
+          new Date(b.createTime) - new Date(a.createTime)
+        );
+        
+        // 分页
+        const start = (page - 1) * pageSize;
+        const end = start + parseInt(pageSize);
+        const paginatedNotifications = userNotifications.slice(start, end);
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: {
+            records: paginatedNotifications,
+            total: userNotifications.length,
+            page: parseInt(page),
+            pageSize: parseInt(pageSize)
+          }
+        };
+      });
+      
+      this.get('/notifications/unread-count', (schema, request) => {
+        // 获取未读通知数量
+        const unreadCount = schema.db.notifications.filter(n => !n.isRead && n.userId === 1).length;
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: unreadCount
+        };
+      });
+      
+      this.put('/notifications/:id/read', (schema, request) => {
+        const notificationId = parseInt(request.params.id);
+        
+        // 标记单条通知为已读
+        const notification = schema.db.notifications.find(notificationId);
+        if (notification) {
+          notification.isRead = true;
+          schema.db.notifications.update(notificationId, notification);
+        }
+        
+        return {
+          code: 200,
+          message: '标记已读成功'
+        };
+      });
+      
+      this.put('/notifications/read-all', (schema, request) => {
+        // 标记所有通知为已读
+        const userNotifications = schema.db.notifications.filter(n => n.userId === 1);
+        
+        userNotifications.forEach(notification => {
+          notification.isRead = true;
+          schema.db.notifications.update(notification.id, notification);
+        });
+        
+        return {
+          code: 200,
+          message: '全部标记已读成功'
+        };
+      });
+      
+      this.delete('/notifications/:id', (schema, request) => {
+        const notificationId = parseInt(request.params.id);
+        
+        // 删除通知
+        schema.db.notifications.remove(notificationId);
+        
+        return {
+          code: 200,
+          message: '删除成功'
+        };
+      });
+
+      // 收藏评测
+      this.post('/posts/:id/favorite', (schema, request) => {
+        const id = request.params.id;
+        const post = schema.db.posts.find(id);
+        
+        if (!post) {
+          return {
+            code: 404,
+            message: '评测不存在'
+          };
+        }
+        
+        // 模拟收藏成功
+        post.favorites = (post.favorites || 0) + 1;
+        schema.db.posts.update(id, post);
+        
+        return {
+          code: 200,
+          message: '收藏成功'
+        };
+      });
+      
+      // 取消收藏
+      this.delete('/posts/:id/favorite', (schema, request) => {
+        const id = request.params.id;
+        const post = schema.db.posts.find(id);
+        
+        if (!post) {
+          return {
+            code: 404,
+            message: '评测不存在'
+          };
+        }
+        
+        // 模拟取消收藏
+        post.favorites = Math.max(0, (post.favorites || 0) - 1);
+        schema.db.posts.update(id, post);
+        
+        return {
+          code: 200,
+          message: '取消收藏成功'
         };
       });
     }

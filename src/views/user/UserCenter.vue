@@ -165,6 +165,84 @@
                 />
               </div>
             </el-tab-pane>
+            
+            <el-tab-pane label="账户安全" name="security">
+              <div class="security-section">
+                <h3 class="section-title">账户安全</h3>
+                
+                <div class="security-item">
+                  <div class="security-item-info">
+                    <div class="security-item-title">
+                      <el-icon><Lock /></el-icon>
+                      <span>登录密码</span>
+                    </div>
+                    <div class="security-item-desc">用于登录账户，建议定期更换</div>
+                  </div>
+                  <div class="security-item-action">
+                    <el-button type="primary" @click="openChangePasswordDialog">修改</el-button>
+                  </div>
+                </div>
+                
+                <div class="security-item">
+                  <div class="security-item-info">
+                    <div class="security-item-title">
+                      <el-icon><Message /></el-icon>
+                      <span>绑定邮箱</span>
+                    </div>
+                    <div class="security-item-desc">{{ userInfo.email || '未绑定邮箱' }}</div>
+                  </div>
+                  <div class="security-item-action">
+                    <el-button type="primary" @click="openEmailDialog">{{ userInfo.email ? '修改' : '绑定' }}</el-button>
+                  </div>
+                </div>
+                
+                <div class="security-item">
+                  <div class="security-item-info">
+                    <div class="security-item-title">
+                      <el-icon><Iphone /></el-icon>
+                      <span>绑定手机</span>
+                    </div>
+                    <div class="security-item-desc">{{ userInfo.phone ? hidePhone(userInfo.phone) : '未绑定手机' }}</div>
+                  </div>
+                  <div class="security-item-action">
+                    <el-button type="primary" @click="openPhoneDialog">{{ userInfo.phone ? '修改' : '绑定' }}</el-button>
+                  </div>
+                </div>
+                
+                <div class="security-item">
+                  <div class="security-item-info">
+                    <div class="security-item-title">
+                      <el-icon><Connection /></el-icon>
+                      <span>第三方账号绑定</span>
+                    </div>
+                    <div class="security-item-desc">绑定第三方账号，快捷登录</div>
+                  </div>
+                  <div class="security-item-action" style="display: flex; gap: 10px;">
+                    <el-button type="success" :disabled="userInfo.wechatBound" size="small">
+                      <el-icon><ChatDotRound /></el-icon>
+                      {{ userInfo.wechatBound ? '已绑定' : '绑定微信' }}
+                    </el-button>
+                    <el-button type="primary" :disabled="userInfo.qqBound" size="small">
+                      <el-icon><Connection /></el-icon>
+                      {{ userInfo.qqBound ? '已绑定' : '绑定QQ' }}
+                    </el-button>
+                  </div>
+                </div>
+                
+                <div class="security-item">
+                  <div class="security-item-info">
+                    <div class="security-item-title">
+                      <el-icon><Warning /></el-icon>
+                      <span>账户注销</span>
+                    </div>
+                    <div class="security-item-desc danger-text">永久删除账户，无法恢复</div>
+                  </div>
+                  <div class="security-item-action">
+                    <el-button type="danger" @click="handleDeleteAccount">申请注销</el-button>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
           </el-tabs>
         </el-card>
       </el-col>
@@ -205,26 +283,130 @@
         </span>
       </template>
     </el-dialog>
+    
+    <!-- 修改密码对话框 -->
+    <el-dialog v-model="passwordDialogVisible" title="修改密码" width="500px">
+      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-position="top">
+        <el-form-item label="当前密码" prop="currentPassword">
+          <el-input 
+            v-model="passwordForm.currentPassword" 
+            type="password" 
+            show-password
+            placeholder="请输入当前密码"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input 
+            v-model="passwordForm.newPassword" 
+            type="password" 
+            show-password
+            placeholder="请输入新密码"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="确认新密码" prop="confirmPassword">
+          <el-input 
+            v-model="passwordForm.confirmPassword" 
+            type="password" 
+            show-password
+            placeholder="请再次输入新密码"
+          ></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="passwordDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitting" @click="changePassword">确认修改</el-button>
+        </span>
+      </template>
+    </el-dialog>
+    
+    <!-- 绑定/修改邮箱对话框 -->
+    <el-dialog v-model="emailDialogVisible" :title="userInfo.email ? '修改邮箱' : '绑定邮箱'" width="500px">
+      <el-form :model="emailForm" :rules="emailRules" ref="emailFormRef" label-position="top">
+        <el-form-item label="新邮箱地址" prop="email">
+          <el-input v-model="emailForm.email" placeholder="请输入邮箱地址"></el-input>
+        </el-form-item>
+        <el-form-item label="验证码" prop="verifyCode">
+          <div class="verify-code-row">
+            <el-input v-model="emailForm.verifyCode" placeholder="请输入验证码" class="verify-code-input"></el-input>
+            <el-button 
+              :disabled="codeSending || emailCountdown > 0" 
+              @click="sendEmailCode" 
+              class="send-code-button"
+            >
+              {{ emailCountdown > 0 ? `重新发送(${emailCountdown}s)` : '发送验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="emailDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitting" @click="bindEmail">确认</el-button>
+        </span>
+      </template>
+    </el-dialog>
+    
+    <!-- 绑定/修改手机对话框 -->
+    <el-dialog v-model="phoneDialogVisible" :title="userInfo.phone ? '修改手机号' : '绑定手机号'" width="500px">
+      <el-form :model="phoneForm" :rules="phoneRules" ref="phoneFormRef" label-position="top">
+        <el-form-item label="手机号码" prop="phone">
+          <el-input v-model="phoneForm.phone" placeholder="请输入手机号码"></el-input>
+        </el-form-item>
+        <el-form-item label="验证码" prop="verifyCode">
+          <div class="verify-code-row">
+            <el-input v-model="phoneForm.verifyCode" placeholder="请输入验证码" class="verify-code-input"></el-input>
+            <el-button 
+              :disabled="codeSending || phoneCountdown > 0" 
+              @click="sendPhoneCode" 
+              class="send-code-button"
+            >
+              {{ phoneCountdown > 0 ? `重新发送(${phoneCountdown}s)` : '发送验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="phoneDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitting" @click="bindPhone">确认</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { EditPen, Delete, Plus } from '@element-plus/icons-vue'
+import { EditPen, Delete, Plus, Lock, Message, Iphone, ChatDotRound, Connection, Warning } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { createRules, validateEmail, validateMobile, validatePassword, validateConfirmPassword } from '@/utils/validate'
 
 const router = useRouter()
 const activeTab = ref('reviews')
 const profileDialogVisible = ref(false)
+const passwordDialogVisible = ref(false)
+const emailDialogVisible = ref(false)
+const phoneDialogVisible = ref(false)
+const submitting = ref(false)
+const codeSending = ref(false)
+const emailCountdown = ref(0)
+const phoneCountdown = ref(0)
+const passwordFormRef = ref(null)
+const emailFormRef = ref(null)
+const phoneFormRef = ref(null)
 
 // 用户信息
 const userInfo = ref({
   username: '用户名',
   email: 'user@example.com',
+  phone: '13800138000',
   avatar: 'https://via.placeholder.com/100',
   role: 'user',
-  bio: '这是一段个人简介'
+  bio: '这是一段个人简介',
+  wechatBound: false,
+  qqBound: false
 })
 
 // 用户统计信息
@@ -259,6 +441,68 @@ const favoritePageSize = ref(6)
 const totalFavorites = ref(0)
 const userFavorites = ref([])
 
+// 修改密码表单
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+// 邮箱表单
+const emailForm = ref({
+  email: '',
+  verifyCode: ''
+})
+
+// 手机号表单
+const phoneForm = ref({
+  phone: '',
+  verifyCode: ''
+})
+
+// 表单校验规则
+const passwordRules = createRules({
+  currentPassword: [
+    { required: true, message: '请输入当前密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6个字符', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { validator: validatePassword, trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    { 
+      validator: (rule, value, callback) => {
+        validateConfirmPassword(passwordForm.value.newPassword)(rule, value, callback)
+      }, 
+      trigger: 'blur' 
+    }
+  ]
+})
+
+const emailRules = createRules({
+  email: [
+    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+    { validator: validateEmail, trigger: 'blur' }
+  ],
+  verifyCode: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { min: 6, max: 6, message: '验证码长度应为6位', trigger: 'blur' }
+  ]
+})
+
+const phoneRules = createRules({
+  phone: [
+    { required: true, message: '请输入手机号码', trigger: 'blur' },
+    { validator: validateMobile, trigger: 'blur' }
+  ],
+  verifyCode: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { min: 6, max: 6, message: '验证码长度应为6位', trigger: 'blur' }
+  ]
+})
+
 // 切换标签页
 const handleTabClick = (tab) => {
   switch(tab.props.name) {
@@ -270,6 +514,9 @@ const handleTabClick = (tab) => {
       break
     case 'favorites':
       fetchUserFavorites()
+      break
+    case 'security':
+      // 处理账户安全标签页的逻辑
       break
   }
 }
@@ -485,6 +732,220 @@ const goToPost = () => {
   router.push('/post')
 }
 
+// 打开修改密码对话框
+const openChangePasswordDialog = () => {
+  passwordForm.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+  passwordDialogVisible.value = true
+}
+
+// 修改密码
+const changePassword = () => {
+  if (!passwordFormRef.value) return
+  
+  passwordFormRef.value.validate(async valid => {
+    if (!valid) return
+    
+    try {
+      submitting.value = true
+      
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      ElMessage.success('密码修改成功')
+      passwordDialogVisible.value = false
+    } catch (error) {
+      console.error('Failed to change password:', error)
+      ElMessage.error('密码修改失败，请稍后重试')
+    } finally {
+      submitting.value = false
+    }
+  })
+}
+
+// 打开邮箱绑定/修改对话框
+const openEmailDialog = () => {
+  emailForm.value = {
+    email: userInfo.value.email || '',
+    verifyCode: ''
+  }
+  emailDialogVisible.value = true
+}
+
+// 发送邮箱验证码
+const sendEmailCode = async () => {
+  if (!emailForm.value.email) {
+    ElMessage.warning('请先输入邮箱地址')
+    return
+  }
+  
+  if (!validateEmail) {
+    ElMessage.warning('请输入正确的邮箱格式')
+    return
+  }
+  
+  try {
+    codeSending.value = true
+    
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 发送成功后开始倒计时
+    emailCountdown.value = 60
+    const timer = setInterval(() => {
+      emailCountdown.value--
+      if (emailCountdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+    
+    ElMessage.success('验证码已发送到您的邮箱，请注意查收')
+  } catch (error) {
+    console.error('Failed to send verification code:', error)
+    ElMessage.error('发送验证码失败，请稍后重试')
+  } finally {
+    codeSending.value = false
+  }
+}
+
+// 绑定/修改邮箱
+const bindEmail = () => {
+  if (!emailFormRef.value) return
+  
+  emailFormRef.value.validate(async valid => {
+    if (!valid) return
+    
+    try {
+      submitting.value = true
+      
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // 更新本地用户信息
+      userInfo.value.email = emailForm.value.email
+      
+      ElMessage.success('邮箱' + (userInfo.value.email ? '修改' : '绑定') + '成功')
+      emailDialogVisible.value = false
+    } catch (error) {
+      console.error('Failed to bind email:', error)
+      ElMessage.error('操作失败，请稍后重试')
+    } finally {
+      submitting.value = false
+    }
+  })
+}
+
+// 打开手机号绑定/修改对话框
+const openPhoneDialog = () => {
+  phoneForm.value = {
+    phone: userInfo.value.phone || '',
+    verifyCode: ''
+  }
+  phoneDialogVisible.value = true
+}
+
+// 发送手机验证码
+const sendPhoneCode = async () => {
+  if (!phoneForm.value.phone) {
+    ElMessage.warning('请先输入手机号码')
+    return
+  }
+  
+  if (!validateMobile) {
+    ElMessage.warning('请输入正确的手机号格式')
+    return
+  }
+  
+  try {
+    codeSending.value = true
+    
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 发送成功后开始倒计时
+    phoneCountdown.value = 60
+    const timer = setInterval(() => {
+      phoneCountdown.value--
+      if (phoneCountdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+    
+    ElMessage.success('验证码已发送到您的手机，请注意查收')
+  } catch (error) {
+    console.error('Failed to send verification code:', error)
+    ElMessage.error('发送验证码失败，请稍后重试')
+  } finally {
+    codeSending.value = false
+  }
+}
+
+// 绑定/修改手机号
+const bindPhone = () => {
+  if (!phoneFormRef.value) return
+  
+  phoneFormRef.value.validate(async valid => {
+    if (!valid) return
+    
+    try {
+      submitting.value = true
+      
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // 更新本地用户信息
+      userInfo.value.phone = phoneForm.value.phone
+      
+      ElMessage.success('手机号' + (userInfo.value.phone ? '修改' : '绑定') + '成功')
+      phoneDialogVisible.value = false
+    } catch (error) {
+      console.error('Failed to bind phone:', error)
+      ElMessage.error('操作失败，请稍后重试')
+    } finally {
+      submitting.value = false
+    }
+  })
+}
+
+// 处理账号注销
+const handleDeleteAccount = () => {
+  ElMessageBox.confirm(
+    '您确定要申请注销账号吗？此操作将永久删除您的账户数据，且无法恢复。',
+    '危险操作',
+    {
+      confirmButtonText: '确认注销',
+      cancelButtonText: '取消',
+      type: 'danger'
+    }
+  ).then(() => {
+    // 二次确认
+    ElMessageBox.confirm(
+      '请再次确认您的操作。注销后，所有个人数据将被清除且无法恢复。',
+      '最终确认',
+      {
+        confirmButtonText: '确认注销',
+        cancelButtonText: '放弃',
+        type: 'danger'
+      }
+    ).then(() => {
+      // 模拟注销操作
+      ElMessage({
+        type: 'success',
+        message: '您的注销申请已提交，系统将在3个工作日内处理'
+      })
+    }).catch(() => {})
+  }).catch(() => {})
+}
+
+// 隐藏部分手机号
+const hidePhone = (phone) => {
+  if (!phone || phone.length < 11) return phone
+  return phone.substr(0, 3) + '****' + phone.substr(7)
+}
+
 // 组件加载时初始化数据
 onMounted(() => {
   // 从localStorage获取用户信息
@@ -698,6 +1159,53 @@ onMounted(() => {
   align-items: center;
 }
 
+.security-section {
+  padding: 10px 0;
+}
+
+.security-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.security-item:last-child {
+  border-bottom: none;
+}
+
+.security-item-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.security-item-desc {
+  color: #909399;
+  font-size: 14px;
+}
+
+.danger-text {
+  color: #F56C6C;
+}
+
+.verify-code-row {
+  display: flex;
+  gap: 10px;
+}
+
+.verify-code-input {
+  flex: 1;
+}
+
+.send-code-button {
+  min-width: 120px;
+}
+
 @media (max-width: 768px) {
   .user-stats {
     margin: 10px 0;
@@ -713,6 +1221,25 @@ onMounted(() => {
   
   .content-card {
     margin-top: 0;
+  }
+  
+  .security-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .security-item-action {
+    margin-top: 10px;
+    width: 100%;
+  }
+  
+  .verify-code-row {
+    flex-direction: column;
+  }
+  
+  .send-code-button {
+    width: 100%;
+    margin-top: 10px;
   }
 }
 </style> 
