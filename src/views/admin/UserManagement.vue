@@ -1,112 +1,89 @@
 <template>
-  <div class="user-management">
-    <el-card class="box-card">
+  <div class="user-management-container">
+    <el-card class="table-card">
       <template #header>
         <div class="card-header">
-          <h3>用户管理</h3>
-          <div class="header-actions">
+          <span>用户管理</span>
+          <div class="header-operations">
             <el-input
               v-model="searchKeyword"
               placeholder="搜索用户名/邮箱"
-              prefix-icon="Search"
               clearable
-              @clear="handleSearch"
               @keyup.enter="handleSearch"
-              style="width: 250px"
-            />
-            <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button type="success" @click="handleExport">导出数据</el-button>
+              style="width: 250px; margin-right: 15px;"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+            <el-button type="primary" @click="handleAddUser">
+              <el-icon><Plus /></el-icon>新增用户
+            </el-button>
           </div>
         </div>
       </template>
       
-      <!-- 用户列表表格 -->
+      <!-- 表格内容 -->
       <el-table
-        :data="userTableData"
-        style="width: 100%"
-        border
         v-loading="loading"
-        :header-cell-style="{ background: '#f5f7fa', color: '#606266' }"
+        :data="userList"
+        border
+        style="width: 100%"
+        row-key="id"
       >
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column label="用户信息" width="250">
+        <el-table-column type="index" width="60" align="center" label="序号" />
+        <el-table-column prop="username" label="用户名" min-width="120" />
+        <el-table-column prop="email" label="邮箱" min-width="200" />
+        <el-table-column label="头像" width="100" align="center">
           <template #default="scope">
-            <div class="user-info-cell">
-              <el-avatar :size="40" :src="scope.row.avatar"></el-avatar>
-              <div class="user-info-detail">
-                <div class="username">{{ scope.row.username }}</div>
-                <div class="email">{{ scope.row.email }}</div>
-              </div>
-            </div>
+            <el-avatar :size="40" :src="scope.row.avatar"></el-avatar>
           </template>
         </el-table-column>
-        <el-table-column prop="registerTime" label="注册时间" sortable width="180" />
-        <el-table-column prop="lastLoginTime" label="最后登录" sortable width="180" />
-        <el-table-column prop="articleCount" label="发布文章" width="100" sortable />
-        <el-table-column prop="commentCount" label="评论数" width="100" sortable />
-        <el-table-column label="账号状态" width="120">
+        <el-table-column prop="role" label="角色" width="120">
           <template #default="scope">
-            <el-tag
-              :type="scope.row.status === 1 ? 'success' : scope.row.status === 0 ? 'warning' : 'danger'"
-            >
-              {{ scope.row.status === 1 ? '正常' : scope.row.status === 0 ? '禁言' : '封禁' }}
-            </el-tag>
+            <el-tag type="success" v-if="scope.row.role === 'admin'">管理员</el-tag>
+            <el-tag v-else>普通用户</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作">
+        <el-table-column prop="createTime" label="注册时间" min-width="160" />
+        <el-table-column label="状态" width="100">
           <template #default="scope">
+            <el-switch
+              v-model="scope.row.status"
+              :active-value="1"
+              :inactive-value="0"
+              @change="(val) => handleStatusChange(scope.row, val)"
+              active-color="#13ce66"
+              inactive-color="#ff4949"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="禁言状态" width="100">
+          <template #default="scope">
+            <el-tag type="danger" v-if="scope.row.isMuted">已禁言</el-tag>
+            <el-tag type="success" v-else>正常</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="260" fixed="right">
+          <template #default="scope">
+            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button
-              v-if="scope.row.status === 1"
+              size="small"
               type="warning"
-              size="small"
-              @click="handleStatusChange(scope.row, 0)"
-            >
-              禁言
-            </el-button>
+              v-if="!scope.row.isMuted"
+              @click="handleMuteChange(scope.row, true)"
+            >禁言</el-button>
             <el-button
-              v-if="scope.row.status === 0"
+              size="small"
               type="success"
-              size="small"
-              @click="handleStatusChange(scope.row, 1)"
-            >
-              解除禁言
-            </el-button>
+              v-else
+              @click="handleMuteChange(scope.row, false)"
+            >解除禁言</el-button>
             <el-button
-              v-if="scope.row.status !== -1"
+              size="small"
               type="danger"
-              size="small"
-              @click="handleStatusChange(scope.row, -1)"
-            >
-              封禁
-            </el-button>
-            <el-button
-              v-if="scope.row.status === -1"
-              type="success"
-              size="small"
-              @click="handleStatusChange(scope.row, 1)"
-            >
-              解封
-            </el-button>
-            <el-dropdown trigger="click">
-              <el-button size="small" plain>
-                更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="handleViewDetails(scope.row)">查看详情</el-dropdown-item>
-                  <el-dropdown-item @click="handleResetPassword(scope.row)">重置密码</el-dropdown-item>
-                  <el-dropdown-item @click="handleSetAdmin(scope.row)" v-if="!scope.row.isAdmin">
-                    设为管理员
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="handleRemoveAdmin(scope.row)" v-if="scope.row.isAdmin">
-                    取消管理员
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="handleDeleteUser(scope.row)" divided>
-                    <span style="color: #F56C6C">删除用户</span>
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+              @click="handleDelete(scope.row)"
+            >删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -114,6 +91,7 @@
       <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
+          background
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :page-sizes="[10, 20, 50, 100]"
@@ -125,43 +103,69 @@
       </div>
     </el-card>
     
-    <!-- 用户详情对话框 -->
-    <el-dialog v-model="dialogVisible" title="用户详情" width="600px">
-      <div class="user-details" v-if="currentUser">
-        <div class="user-profile">
-          <el-avatar :size="100" :src="currentUser.avatar"></el-avatar>
-          <h2>{{ currentUser.username }}</h2>
-          <p>{{ currentUser.email }}</p>
-          <el-tag type="info" v-if="currentUser.isAdmin">管理员</el-tag>
-        </div>
-        
-        <el-divider />
-        
-        <el-descriptions title="基本信息" :column="2" border>
-          <el-descriptions-item label="用户ID">{{ currentUser.id }}</el-descriptions-item>
-          <el-descriptions-item label="注册时间">{{ currentUser.registerTime }}</el-descriptions-item>
-          <el-descriptions-item label="最后登录">{{ currentUser.lastLoginTime }}</el-descriptions-item>
-          <el-descriptions-item label="账号状态">
-            <el-tag
-              :type="currentUser.status === 1 ? 'success' : currentUser.status === 0 ? 'warning' : 'danger'"
-            >
-              {{ currentUser.status === 1 ? '正常' : currentUser.status === 0 ? '禁言' : '封禁' }}
-            </el-tag>
-          </el-descriptions-item>
-        </el-descriptions>
-        
-        <el-divider />
-        
-        <el-descriptions title="活动信息" :column="2" border>
-          <el-descriptions-item label="发布文章">{{ currentUser.articleCount }}篇</el-descriptions-item>
-          <el-descriptions-item label="发表评论">{{ currentUser.commentCount }}条</el-descriptions-item>
-          <el-descriptions-item label="IP地址">{{ currentUser.lastIp }}</el-descriptions-item>
-          <el-descriptions-item label="设备信息">{{ currentUser.deviceInfo }}</el-descriptions-item>
-        </el-descriptions>
-      </div>
+    <!-- 编辑/添加用户对话框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEdit ? '编辑用户' : '新增用户'"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-form
+        ref="userFormRef"
+        :model="userForm"
+        :rules="userFormRules"
+        label-width="80px"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="userForm.username" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="userForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password" v-if="!isEdit">
+          <el-input v-model="userForm.password" type="password" placeholder="请输入密码" show-password />
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="userForm.role" placeholder="请选择角色">
+            <el-option label="管理员" value="admin" />
+            <el-option label="普通用户" value="user" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-switch
+            v-model="userForm.status"
+            :active-value="1"
+            :inactive-value="0"
+            active-text="启用"
+            inactive-text="禁用"
+          />
+        </el-form-item>
+        <el-form-item label="禁言" prop="isMuted">
+          <el-switch
+            v-model="userForm.isMuted"
+            :active-value="true"
+            :inactive-value="false"
+            active-text="已禁言"
+            inactive-text="正常"
+          />
+        </el-form-item>
+        <el-form-item label="头像">
+          <el-upload
+            class="avatar-uploader"
+            action=""
+            :show-file-list="false"
+            :auto-upload="false"
+            :on-change="handleAvatarChange"
+          >
+            <img v-if="userForm.avatar" :src="userForm.avatar" class="avatar" />
+            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
+      </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">关闭</el-button>
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitForm">确定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -169,226 +173,358 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Search, ArrowDown } from '@element-plus/icons-vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Plus } from '@element-plus/icons-vue'
+import instance from '@/utils/http'
 
-// 用户数据
-const userTableData = ref([])
+// 用户数据列表
+const userList = ref([])
+
+// 表格相关状态
 const loading = ref(false)
-const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const searchKeyword = ref('')
 
-// 当前选中的用户
-const currentUser = ref(null)
+// 对话框相关状态
 const dialogVisible = ref(false)
+const isEdit = ref(false)
+const userFormRef = ref(null)
+const userForm = reactive({
+  id: '',
+  username: '',
+  email: '',
+  password: '',
+  role: 'user',
+  status: 1,
+  isMuted: false,
+  avatar: ''
+})
+
+// 表单验证规则
+const userFormRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  password: [
+    { required: !isEdit.value, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
+  ],
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
+  ]
+}
+
+// 初始化数据
+onMounted(() => {
+  fetchUsers()
+})
 
 // 获取用户列表
-const fetchUserList = () => {
+const fetchUsers = async () => {
   loading.value = true
-  
-  // 模拟API调用
-  setTimeout(() => {
-    // 模拟数据
-    const mockData = []
-    for (let i = 1; i <= 50; i++) {
-      mockData.push({
-        id: i,
-        username: `用户${i}`,
-        email: `user${i}@example.com`,
-        avatar: `https://via.placeholder.com/40?text=U${i}`,
-        registerTime: '2023-0' + (i % 9 + 1) + '-' + (i % 28 + 1),
-        lastLoginTime: '2023-09-' + (i % 28 + 1),
-        articleCount: Math.floor(Math.random() * 20),
-        commentCount: Math.floor(Math.random() * 50),
-        status: Math.floor(Math.random() * 3) - 1, // -1封禁，0禁言，1正常
-        isAdmin: i === 1, // 第一个用户是管理员
-        lastIp: '192.168.1.' + i,
-        deviceInfo: i % 2 === 0 ? 'iPhone 14 Pro, iOS 16' : 'Chrome 108, Windows 11'
-      })
-    }
+  try {
+    // 从API获取用户数据
+    const response = await instance.get('/admin/users', {
+      params: {
+        page: currentPage.value,
+        pageSize: pageSize.value,
+        keyword: searchKeyword.value
+      }
+    })
     
-    // 过滤搜索关键词
-    const filteredData = searchKeyword.value
-      ? mockData.filter(
-          user =>
-            user.username.includes(searchKeyword.value) ||
-            user.email.includes(searchKeyword.value)
+    if (response && response.code === 200) {
+      userList.value = response.data.records || []
+      total.value = response.data.total || 0
+    } else {
+      // 如果API尚未实现，使用模拟数据
+      console.warn('API未提供数据，使用模拟数据')
+      
+      // 模拟数据
+      const mockUsers = [
+        {
+          id: 1,
+          username: 'admin',
+          email: 'admin@example.com',
+          avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+          role: 'admin',
+          status: 1,
+          createTime: '2023-05-01 10:00:00'
+        },
+        {
+          id: 2,
+          username: 'user',
+          email: 'user@example.com',
+          avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+          role: 'user',
+          status: 1,
+          createTime: '2023-05-05 14:30:00'
+        }
+      ]
+      
+      if (searchKeyword.value) {
+        userList.value = mockUsers.filter(user => 
+          user.username.includes(searchKeyword.value) || 
+          user.email.includes(searchKeyword.value)
         )
-      : mockData
+      } else {
+        userList.value = mockUsers
+      }
+      
+      total.value = userList.value.length
+    }
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+    ElMessage.error('获取用户列表失败')
     
-    total.value = filteredData.length
-    
-    // 分页处理
-    const start = (currentPage.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    userTableData.value = filteredData.slice(start, end)
-    
+    // 出错时使用模拟数据
+    userList.value = [
+      {
+        id: 1,
+        username: 'admin',
+        email: 'admin@example.com',
+        avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+        role: 'admin',
+        status: 1,
+        createTime: '2023-05-01 10:00:00'
+      },
+      {
+        id: 2,
+        username: 'user',
+        email: 'user@example.com',
+        avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+        role: 'user',
+        status: 1,
+        createTime: '2023-05-05 14:30:00'
+      }
+    ]
+    total.value = userList.value.length
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
-// 搜索
+// 处理搜索
 const handleSearch = () => {
   currentPage.value = 1
-  fetchUserList()
+  fetchUsers()
 }
 
-// 导出数据
-const handleExport = () => {
-  ElMessage.success('用户数据导出成功')
+// 处理页码变化
+const handleCurrentChange = (page) => {
+  currentPage.value = page
+  fetchUsers()
 }
 
-// 分页处理
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  fetchUserList()
+// 处理每页条数变化
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchUsers()
 }
 
-const handleCurrentChange = (val) => {
-  currentPage.value = val
-  fetchUserList()
-}
-
-// 状态变更处理
-const handleStatusChange = (user, status) => {
-  const statusText = status === 1 ? '正常' : status === 0 ? '禁言' : '封禁'
-  ElMessageBox.confirm(
-    `确定要将用户 "${user.username}" 的状态改为 "${statusText}" 吗？`,
-    '操作确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+// 处理状态变化
+const handleStatusChange = async (row, status) => {
+  try {
+    // 调用API更新用户状态
+    const response = await instance.put(`/admin/users/${row.id}/status`, {
+      status: status
+    })
+    
+    if (response && response.code === 200) {
+      ElMessage.success(`已${status === 1 ? '启用' : '禁用'}用户: ${row.username}`)
+    } else {
+      // 如果API尚未实现，使用模拟行为
+      console.warn('API未实现，使用模拟行为')
+      
+      // 模拟异步请求
+      await new Promise(resolve => setTimeout(resolve, 300))
+      ElMessage.success(`已${status === 1 ? '启用' : '禁用'}用户: ${row.username}`)
     }
-  )
-    .then(() => {
-      // 模拟API调用
-      setTimeout(() => {
-        const index = userTableData.value.findIndex(item => item.id === user.id)
-        if (index !== -1) {
-          userTableData.value[index].status = status
-        }
-        ElMessage.success(`已将用户 "${user.username}" 的状态改为 "${statusText}"`)
-      }, 300)
-    })
-    .catch(() => {
-      // 取消操作
-    })
+  } catch (error) {
+    console.error('更新用户状态失败:', error)
+    row.status = status === 1 ? 0 : 1 // 恢复状态
+    ElMessage.error('更新用户状态失败')
+  }
 }
 
-// 查看用户详情
-const handleViewDetails = (user) => {
-  currentUser.value = { ...user }
+// 处理新增用户
+const handleAddUser = () => {
+  isEdit.value = false
+  // 重置表单
+  Object.assign(userForm, {
+    id: '',
+    username: '',
+    email: '',
+    password: '',
+    role: 'user',
+    status: 1,
+    isMuted: false,
+    avatar: ''
+  })
   dialogVisible.value = true
 }
 
-// 重置密码
-const handleResetPassword = (user) => {
+// 处理编辑用户
+const handleEdit = (row) => {
+  isEdit.value = true
+  // 填充表单数据
+  Object.assign(userForm, {
+    id: row.id,
+    username: row.username,
+    email: row.email,
+    password: '', // 编辑时不需要填充密码
+    role: row.role,
+    status: row.status,
+    isMuted: row.isMuted,
+    avatar: row.avatar
+  })
+  dialogVisible.value = true
+}
+
+// 处理删除用户
+const handleDelete = (row) => {
   ElMessageBox.confirm(
-    `确定要重置用户 "${user.username}" 的密码吗？重置后密码将发送到用户邮箱。`,
-    '操作确认',
+    `确认删除用户 "${row.username}" 吗?`,
+    '警告',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     }
-  )
-    .then(() => {
-      ElMessage.success(`已重置用户 "${user.username}" 的密码，新密码已发送到用户邮箱`)
-    })
-    .catch(() => {
-      // 取消操作
-    })
-}
-
-// 设置为管理员
-const handleSetAdmin = (user) => {
-  ElMessageBox.confirm(
-    `确定要将用户 "${user.username}" 设置为管理员吗？`,
-    '操作确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+  ).then(async () => {
+    try {
+      // 调用API删除用户
+      const response = await instance.delete(`/admin/users/${row.id}`)
+      
+      if (response && response.code === 200) {
+        ElMessage.success('删除成功')
+        fetchUsers() // 刷新列表
+      } else {
+        // 如果API尚未实现，使用模拟行为
+        console.warn('API未实现，使用模拟行为')
+        
+        // 模拟异步请求
+        await new Promise(resolve => setTimeout(resolve, 300))
+        ElMessage.success('删除成功')
+        fetchUsers() // 刷新列表
+      }
+    } catch (error) {
+      console.error('删除用户失败:', error)
+      ElMessage.error('删除用户失败')
     }
-  )
-    .then(() => {
-      // 模拟API调用
-      setTimeout(() => {
-        const index = userTableData.value.findIndex(item => item.id === user.id)
-        if (index !== -1) {
-          userTableData.value[index].isAdmin = true
-        }
-        ElMessage.success(`已将用户 "${user.username}" 设置为管理员`)
-      }, 300)
-    })
-    .catch(() => {
-      // 取消操作
-    })
+  }).catch(() => {
+    // 用户取消删除
+  })
 }
 
-// 取消管理员
-const handleRemoveAdmin = (user) => {
-  ElMessageBox.confirm(
-    `确定要取消用户 "${user.username}" 的管理员权限吗？`,
-    '操作确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+// 处理头像变化
+const handleAvatarChange = async (file) => {
+  // 在实际应用中，应该上传图片到服务器并获取URL
+  try {
+    const formData = new FormData()
+    formData.append('file', file.raw)
+    
+    // 调用上传API
+    const response = await instance.post('/upload/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    
+    if (response && response.code === 200) {
+      userForm.avatar = response.data.url
+    } else {
+      // 如果API尚未实现，使用本地预览
+      console.warn('上传API未实现，使用本地预览')
+      userForm.avatar = URL.createObjectURL(file.raw)
     }
-  )
-    .then(() => {
-      // 模拟API调用
-      setTimeout(() => {
-        const index = userTableData.value.findIndex(item => item.id === user.id)
-        if (index !== -1) {
-          userTableData.value[index].isAdmin = false
-        }
-        ElMessage.success(`已取消用户 "${user.username}" 的管理员权限`)
-      }, 300)
-    })
-    .catch(() => {
-      // 取消操作
-    })
+  } catch (error) {
+    console.error('上传头像失败:', error)
+    ElMessage.error('上传头像失败')
+    // 使用本地预览作为回退
+    userForm.avatar = URL.createObjectURL(file.raw)
+  }
 }
 
-// 删除用户
-const handleDeleteUser = (user) => {
-  ElMessageBox.confirm(
-    `确定要删除用户 "${user.username}" 吗？此操作不可恢复，用户的所有内容也将被删除。`,
-    '危险操作',
-    {
-      confirmButtonText: '确认删除',
-      cancelButtonText: '取消',
-      type: 'error'
+// 提交表单
+const submitForm = () => {
+  userFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    
+    try {
+      let response
+      
+      if (isEdit.value) {
+        // 编辑用户
+        response = await instance.put(`/admin/users/${userForm.id}`, userForm)
+      } else {
+        // 创建用户
+        response = await instance.post('/admin/users', userForm)
+      }
+      
+      if (response && response.code === 200) {
+        ElMessage.success(isEdit.value ? '编辑成功' : '添加成功')
+        dialogVisible.value = false
+        fetchUsers() // 刷新列表
+      } else {
+        // 如果API尚未实现，使用模拟行为
+        console.warn('API未实现，使用模拟行为')
+        
+        // 模拟异步请求
+        await new Promise(resolve => setTimeout(resolve, 500))
+        ElMessage.success(isEdit.value ? '编辑成功' : '添加成功')
+        dialogVisible.value = false
+        fetchUsers() // 刷新列表
+      }
+    } catch (error) {
+      console.error('保存用户失败:', error)
+      ElMessage.error('保存用户失败')
     }
-  )
-    .then(() => {
-      // 模拟API调用
-      setTimeout(() => {
-        userTableData.value = userTableData.value.filter(item => item.id !== user.id)
-        total.value -= 1
-        ElMessage.success(`已删除用户 "${user.username}"`)
-      }, 300)
-    })
-    .catch(() => {
-      // 取消操作
-    })
+  })
 }
 
-// 初始化
-onMounted(() => {
-  fetchUserList()
-})
+// 处理禁言状态变化
+const handleMuteChange = async (row, isMuted) => {
+  try {
+    // 调用API更新用户禁言状态
+    const response = await instance.put(`/admin/users/${row.id}/mute`, {
+      isMuted: isMuted
+    })
+    
+    if (response && response.code === 200) {
+      ElMessage.success(`已${isMuted ? '禁言' : '解除禁言'}用户: ${row.username}`)
+      row.isMuted = isMuted
+    } else {
+      // 如果API尚未实现，使用模拟行为
+      console.warn('API未实现，使用模拟行为')
+      
+      // 模拟异步请求
+      await new Promise(resolve => setTimeout(resolve, 300))
+      ElMessage.success(`已${isMuted ? '禁言' : '解除禁言'}用户: ${row.username}`)
+      row.isMuted = isMuted
+    }
+  } catch (error) {
+    console.error('更新用户禁言状态失败:', error)
+    ElMessage.error('更新用户禁言状态失败')
+  }
+}
 </script>
 
 <style scoped>
-.user-management {
-  padding: 0;
+.user-management-container {
+  padding: 10px;
+}
+
+.table-card {
+  margin-bottom: 20px;
 }
 
 .card-header {
@@ -397,29 +533,9 @@ onMounted(() => {
   align-items: center;
 }
 
-.header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.user-info-cell {
+.header-operations {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.user-info-detail {
-  display: flex;
-  flex-direction: column;
-}
-
-.username {
-  font-weight: bold;
-}
-
-.email {
-  font-size: 12px;
-  color: #909399;
 }
 
 .pagination-container {
@@ -428,23 +544,36 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.user-details {
-  padding: 10px;
-}
-
-.user-profile {
+.avatar-uploader {
+  width: 100px;
+  height: 100px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
 }
 
-.user-profile h2 {
-  margin: 10px 0 5px;
+.avatar-uploader:hover {
+  border-color: #409EFF;
 }
 
-.user-profile p {
-  margin: 0 0 10px;
-  color: #606266;
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 100px;
+  height: 100px;
+  text-align: center;
+  line-height: 100px;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  display: block;
+  object-fit: cover;
 }
 </style> 

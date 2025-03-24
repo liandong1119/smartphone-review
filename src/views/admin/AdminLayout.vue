@@ -1,6 +1,6 @@
 <template>
   <div class="admin-layout">
-    <el-container class="container">
+    <el-container class="admin-container">
       <!-- 侧边栏 -->
       <el-aside width="220px" class="aside">
         <div class="logo-container">
@@ -20,6 +20,10 @@
           <el-menu-item index="/admin/users">
             <el-icon><User /></el-icon>
             <template #title>用户管理</template>
+          </el-menu-item>
+          <el-menu-item index="/admin/posts">
+            <el-icon><Document /></el-icon>
+            <template #title>帖子管理</template>
           </el-menu-item>
           <el-menu-item index="/admin/comments">
             <el-icon><ChatDotRound /></el-icon>
@@ -91,6 +95,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { 
+  User, 
+  ChatDotRound, 
+  Bell, 
+  Cellphone, 
+  Back, 
+  Fold, 
+  Expand, 
+  SwitchButton,
+  Document
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -133,6 +148,7 @@ onMounted(() => {
 // 退出登录
 const handleLogout = () => {
   localStorage.removeItem('user')
+  localStorage.removeItem('token')
   ElMessage.success('已成功退出登录')
   router.push('/login')
 }
@@ -141,16 +157,21 @@ const handleLogout = () => {
 <style scoped>
 .admin-layout {
   min-height: 100vh;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.container {
+.admin-container {
   height: 100vh;
+  width: 100%;
 }
 
 .aside {
   background-color: #304156;
   transition: width 0.3s;
   overflow-x: hidden;
+  height: 100vh;
 }
 
 .logo-container {
@@ -223,13 +244,16 @@ const handleLogout = () => {
 .main-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
+  flex: 1;
+  width: calc(100% - 220px);
 }
 
 .main {
   background-color: #f0f2f5;
   padding: 20px;
   overflow-y: auto;
+  flex: 1;
 }
 
 .footer {

@@ -1,243 +1,205 @@
 <template>
   <div class="brand-list-container">
-    <!-- 品牌分类 -->
-    <el-card class="brand-category-card">
-      <template #header>
-        <div class="card-header">
-          <span>手机品牌</span>
-        </div>
-      </template>
-      
-      <div class="brand-list">
-        <div 
-          v-for="brand in brands" 
-          :key="brand.id" 
-          class="brand-item"
-          :class="{ 'active': selectedBrand === brand.id }"
-          @click="selectBrand(brand.id)"
-        >
-          <div class="brand-logo">
-            <img :src="brand.logo" :alt="brand.name" />
+    <div class="container">
+      <!-- 品牌列表 -->
+      <div class="brand-nav">
+        <div class="section-title">品牌导航</div>
+        <el-scrollbar>
+          <div class="brand-nav-list">
+            <div
+              v-for="brand in brands"
+              :key="brand.id"
+              class="brand-item"
+              :class="{ 'active': selectedBrand && selectedBrand.id === brand.id }"
+              @click="selectBrand(brand)"
+            >
+              <div class="brand-logo">
+                <img :src="brand.logo" :alt="brand.name" class="brand-logo-img" />
+              </div>
+              <div class="brand-name">{{ brand.name }}</div>
+            </div>
           </div>
-          <div class="brand-name">{{ brand.name }}</div>
-        </div>
+        </el-scrollbar>
       </div>
-    </el-card>
-    
-    <!-- 手机型号列表 -->
-    <el-card class="phone-list-card">
-      <template #header>
-        <div class="card-header">
-          <span v-if="selectedBrand">{{ getBrandName(selectedBrand) }}系列机型</span>
-          <span v-else>请选择品牌查看机型</span>
+      
+      <!-- 品牌详情 -->
+      <div v-if="selectedBrand" class="brand-detail">
+        <div class="brand-header">
+          <div class="brand-info">
+            <img :src="selectedBrand.logo" :alt="selectedBrand.name" class="brand-detail-logo" />
+            <div class="brand-title">
+              <h2>{{ selectedBrand.name }}</h2>
+              <div class="brand-description">{{ selectedBrand.description }}</div>
+            </div>
+          </div>
           
-          <!-- 排序选项 -->
-          <div class="sort-options">
-            <el-select v-model="sortBy" placeholder="排序方式" size="small">
-              <el-option label="发布时间" value="date" />
-              <el-option label="价格" value="price" />
-              <el-option label="热度" value="popularity" />
-            </el-select>
+          <div class="brand-sort">
+            <span>排序方式:</span>
+            <el-radio-group v-model="sortBy" size="small">
+              <el-radio-button label="date">最新上市</el-radio-button>
+              <el-radio-button label="popularity">人气最高</el-radio-button>
+              <el-radio-button label="price">价格排序</el-radio-button>
+            </el-radio-group>
           </div>
         </div>
-      </template>
-      
-      <div v-if="!selectedBrand" class="select-brand-tip">
-        <el-empty description="请先选择左侧品牌" />
-      </div>
-      
-      <div v-else-if="filteredPhones.length === 0" class="empty-message">
-        <el-empty description="暂无该品牌机型" />
-      </div>
-      
-      <div v-else class="phone-grid">
-        <div v-for="phone in filteredPhones" :key="phone.id" class="phone-card">
-          <div class="phone-image">
-            <img :src="phone.images[0]" :alt="phone.name" />
-          </div>
-          <div class="phone-info">
-            <h3 class="phone-name">{{ phone.name }}</h3>
-            <p class="phone-desc">{{ phone.content }}</p>
-            <div class="phone-meta">
-              <span class="phone-date">发布: {{ phone.date }}</span>
-              <el-button type="primary" size="small" @click="viewPhoneReviews(phone.id)">查看评测</el-button>
+        
+        <!-- 加载中状态 -->
+        <div v-if="loading" class="loading-container">
+          <el-skeleton :rows="3" animated />
+        </div>
+        
+        <!-- 手机型号列表 -->
+        <div v-else>
+          <el-empty v-if="filteredPhones.length === 0" description="暂无手机型号" />
+          
+          <div v-else class="phone-list">
+            <div
+              v-for="phone in filteredPhones"
+              :key="phone.id"
+              class="phone-card card-hover"
+              @click="goToPhoneDetail(phone.id)"
+            >
+              <img :src="phone.image" :alt="phone.name" class="phone-image" />
+              <div class="phone-info">
+                <h3 class="phone-name">{{ phone.name }}</h3>
+                <div class="phone-desc">{{ phone.description }}</div>
+                <div class="phone-meta">
+                  <div class="phone-price">¥{{ phone.price }}</div>
+                  <div class="phone-date">{{ formatDate(phone.releaseDate || phone.createTime) }}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </el-card>
+      
+      <div v-else class="no-brand-selected">
+        <el-empty description="请选择一个品牌" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import instance from '@/utils/http'
 
 const router = useRouter()
-const selectedBrand = ref('')
+const selectedBrand = ref(null)
 const sortBy = ref('date')
 
-// 模拟品牌数据
-const brands = ref([
-  { id: 'apple', name: '苹果', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/505px-Apple_logo_black.svg.png' },
-  { id: 'samsung', name: '三星', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Samsung_Logo.svg/640px-Samsung_Logo.svg.png' },
-  { id: 'xiaomi', name: '小米', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Xiaomi_logo_%282021-%29.svg/768px-Xiaomi_logo_%282021-%29.svg.png' },
-  { id: 'huawei', name: '华为', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Huawei_Logo.svg/1280px-Huawei_Logo.svg.png' },
-  { id: 'oppo', name: 'OPPO', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/OPPO_Logo.svg/640px-OPPO_Logo.svg.png' },
-  { id: 'vivo', name: 'vivo', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Vivo_logo_2019.svg/1200px-Vivo_logo_2019.svg.png' }
-])
+// 品牌和型号数据
+const brands = ref([])
+const phoneModels = ref([])
+const loading = ref(false)
 
-// 模拟手机型号数据
-const phones = ref([
-  {
-    id: 1,
-    brandId: 'apple',
-    name: 'iPhone 15 Pro Max',
-    images: [
-      'https://img.alicdn.com/imgextra/i3/1917047079/O1CN01dPH3Wy22UbBZRRdP2_!!1917047079.png'
-    ],
-    content: 'iPhone 15 Pro Max采用钛金属边框，A17 Pro处理器，性能强劲，搭载iOS 17系统。',
-    date: '2023-10-15',
-    price: 8999,
-    popularity: 98
-  },
-  {
-    id: 2,
-    brandId: 'apple',
-    name: 'iPhone 15',
-    images: [
-      'https://img.alicdn.com/imgextra/i1/1714128138/O1CN01TRBc4C29zFt2bS2oH_!!1714128138.jpg'
-    ],
-    content: 'iPhone 15采用玻璃材质，搭载A16仿生芯片，动态岛设计，提供多种鲜亮颜色选择。',
-    date: '2023-09-22',
-    price: 5999,
-    popularity: 95
-  },
-  {
-    id: 3,
-    brandId: 'xiaomi',
-    name: '小米14 Ultra',
-    images: [
-      'https://img.alicdn.com/imgextra/i1/2616970884/O1CN01QkEw801IOuMxfLS4U_!!2616970884.jpg'
-    ],
-    content: '小米14 Ultra搭载骁龙8 Gen3处理器，徕卡认证四摄，2K+分辨率OLED屏幕，拍照效果出色。',
-    date: '2024-02-25',
-    price: 6499,
-    popularity: 92
-  },
-  {
-    id: 4,
-    brandId: 'xiaomi',
-    name: '小米14',
-    images: [
-      'https://img.alicdn.com/imgextra/i4/2616970884/O1CN01pK5T8Q1IOuMoU5vhp_!!2616970884.jpg'
-    ],
-    content: '小米14搭载全新骁龙8 Gen3处理器，轻薄设计，徕卡光学镜头，新一代HyperOS系统。',
-    date: '2023-10-26',
-    price: 4299,
-    popularity: 90
-  },
-  {
-    id: 5,
-    brandId: 'huawei',
-    name: 'Mate60 Pro',
-    images: [
-      'https://img.alicdn.com/imgextra/i3/2838892713/O1CN01UYfFAW1PpKJCcGf9O_!!2838892713.jpg'
-    ],
-    content: '华为Mate60 Pro采用昆仑玻璃，麒麟9000S芯片，搭载鸿蒙系统，支持卫星通信。',
-    date: '2023-08-29',
-    price: 6999,
-    popularity: 96
-  },
-  {
-    id: 6,
-    brandId: 'huawei',
-    name: 'P60 Pro',
-    images: [
-      'https://img.alicdn.com/imgextra/i2/2838892713/O1CN01jQRPn91PpKJDDVA1t_!!2838892713.jpg'
-    ],
-    content: '华为P60 Pro搭载XMAGE影像系统，变光可调光圈，双重望远增强，全新配色设计。',
-    date: '2023-03-23',
-    price: 6488,
-    popularity: 88
-  },
-  {
-    id: 7,
-    brandId: 'samsung',
-    name: 'Galaxy S24 Ultra',
-    images: [
-      'https://img.alicdn.com/imgextra/i2/2212560018/O1CN01hkZgDz1oVx9Qqgz9h_!!2212560018.jpg'
-    ],
-    content: '三星Galaxy S24 Ultra采用钛金属边框，200MP摄像头，支持S Pen，搭载骁龙8 Gen3处理器。',
-    date: '2024-01-17',
-    price: 9999,
-    popularity: 94
-  },
-  {
-    id: 8,
-    brandId: 'samsung',
-    name: 'Galaxy Z Fold5',
-    images: [
-      'https://img.alicdn.com/imgextra/i1/2212560018/O1CN01UibVSx1oVx90QqBU3_!!2212560018.jpg'
-    ],
-    content: '三星Galaxy Z Fold5可折叠设计，内外双屏，支持S Pen，搭载骁龙8 Gen2处理器。',
-    date: '2023-07-26',
-    price: 12999,
-    popularity: 85
-  },
-  {
-    id: 9,
-    brandId: 'oppo',
-    name: 'Find X7 Ultra',
-    images: [
-      'https://img.alicdn.com/imgextra/i4/2201203103170/O1CN01Yz7CZY1KbPFuHwgk7_!!2201203103170.jpg'
-    ],
-    content: 'OPPO Find X7 Ultra搭载双长焦四摄系统，天玑9300旗舰芯片，2K超视网膜曲面屏。',
-    date: '2024-01-08',
-    price: 6499,
-    popularity: 89
-  },
-  {
-    id: 10,
-    brandId: 'vivo',
-    name: 'X100 Pro',
-    images: [
-      'https://img.alicdn.com/imgextra/i4/2210860234676/O1CN01XzNL761YpWvSUaQAq_!!2210860234676.jpg'
-    ],
-    content: 'vivo X100 Pro搭载天玑9300处理器，蔡司影像系统，专业大底主摄，5400mAh超大电池。',
-    date: '2023-11-13',
-    price: 5999,
-    popularity: 91
+// 获取所有品牌
+const fetchBrands = async () => {
+  loading.value = true
+  try {
+    // 使用统一的API接口
+    const response = await instance.get('/brands')
+    
+    console.log('品牌接口原始响应:', response)
+    
+    // 检查响应格式并处理数据
+    if (response && Array.isArray(response)) {
+      // 如果直接返回数组，说明拦截器已提取了data字段
+      brands.value = response
+    } else if (response && response.data && Array.isArray(response.data)) {
+      // 如果返回的是包含data字段的对象
+      brands.value = response.data
+    } else if (response && response.code === 200 && Array.isArray(response.data)) {
+      // 直接处理API响应格式
+      brands.value = response.data
+    } else {
+      // 无法识别的响应格式，使用空数组
+      console.error('无法识别的品牌数据格式:', response)
+      brands.value = []
+      ElMessage.warning('获取品牌数据格式异常')
+    }
+    
+    console.log('处理后的品牌数据:', brands.value)
+    
+    // 如果有品牌，默认选择第一个
+    if (brands.value.length > 0) {
+      selectBrand(brands.value[0])
+    } else {
+      ElMessage.warning('没有可用的品牌数据')
+    }
+  } catch (error) {
+    console.error('获取品牌列表失败:', error)
+    ElMessage.error('获取品牌列表失败: ' + (error.message || '未知错误'))
+    brands.value = []
+  } finally {
+    loading.value = false
   }
-])
+}
+
+// 选择品牌并获取对应型号
+const selectBrand = async (brand) => {
+  selectedBrand.value = brand
+  phoneModels.value = []
+  loading.value = true
+  
+  try {
+    // 使用统一的API接口获取品牌下的型号
+    const response = await instance.get(`/brands/${brand.id}/models`)
+    
+    console.log('型号接口原始响应:', response)
+    
+    // 检查响应格式并处理数据
+    if (response && Array.isArray(response)) {
+      // 如果直接返回数组，说明拦截器已提取了data字段
+      phoneModels.value = response
+    } else if (response && response.data && Array.isArray(response.data)) {
+      // 如果返回的是包含data字段的对象
+      phoneModels.value = response.data
+    } else if (response && response.code === 200 && Array.isArray(response.data)) {
+      // 直接处理API响应格式
+      phoneModels.value = response.data
+    } else {
+      // 无法识别的响应格式，使用空数组
+      console.error(`无法识别的型号数据格式 (品牌ID: ${brand.id}):`, response)
+      phoneModels.value = []
+      ElMessage.warning('获取型号数据格式异常')
+    }
+    
+    console.log('处理后的型号数据:', phoneModels.value)
+  } catch (error) {
+    console.error('获取型号列表失败:', error)
+    ElMessage.error('获取型号列表失败: ' + (error.message || '未知错误'))
+    phoneModels.value = []
+  } finally {
+    loading.value = false
+  }
+}
 
 // 根据选择的品牌过滤手机列表
 const filteredPhones = computed(() => {
   if (!selectedBrand.value) return []
   
-  let result = phones.value.filter(phone => phone.brandId === selectedBrand.value)
+  let result = phoneModels.value
   
   // 根据排序选项排序
-  if (sortBy.value === 'date') {
-    result = result.sort((a, b) => new Date(b.date) - new Date(a.date))
-  } else if (sortBy.value === 'price') {
-    result = result.sort((a, b) => b.price - a.price)
+  if (sortBy.value === 'price') {
+    result = [...result].sort((a, b) => a.price - b.price)
   } else if (sortBy.value === 'popularity') {
-    result = result.sort((a, b) => b.popularity - a.popularity)
+    result = [...result].sort((a, b) => b.popularity - a.popularity)
+  } else {
+    // 默认按日期排序（新 -> 旧）
+    result = [...result].sort((a, b) => new Date(b.releaseDate || b.createTime) - new Date(a.releaseDate || a.createTime))
   }
   
   return result
 })
 
-// 选择品牌
-const selectBrand = (brandId) => {
-  selectedBrand.value = brandId
-}
-
 // 获取品牌名称
 const getBrandName = (brandId) => {
   const brand = brands.value.find(b => b.id === brandId)
-  return brand ? brand.name : ''
+  return brand ? brand.name : '未知品牌'
 }
 
 // 查看手机评测
@@ -246,53 +208,54 @@ const viewPhoneReviews = (phoneId) => {
   router.push(`/phone/${phoneId}/reviews`)
 }
 
-// 组件挂载时可以从API获取数据
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// 跳转到手机详情页面
+const goToPhoneDetail = (phoneId) => {
+  router.push(`/phone/${phoneId}`)
+}
+
+// 在组件挂载时获取品牌列表
 onMounted(() => {
-  // 这里可以添加API调用，从后端获取数据
+  fetchBrands()
 })
 </script>
 
 <style scoped>
 .brand-list-container {
-  width: 100%;
+  padding: 20px 0;
+}
+
+.brand-nav {
+  margin-bottom: 30px;
+}
+
+.brand-nav-list {
   display: flex;
-  gap: 20px;
-}
-
-.brand-category-card {
-  width: 200px;
-  flex-shrink: 0;
-}
-
-.phone-list-card {
-  flex: 1;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.brand-list {
-  display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 15px;
+  padding: 10px 0;
 }
 
 .brand-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 10px;
-  border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s;
+  padding: 10px;
+  border-radius: 8px;
+  min-width: 100px;
+  max-width: 120px;
 }
 
 .brand-item:hover {
-  background-color: #f5f7fa;
+  background-color: #f0f0f0;
 }
 
 .brand-item.active {
@@ -301,16 +264,17 @@ onMounted(() => {
 }
 
 .brand-logo {
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
   overflow: hidden;
-  margin-right: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 8px;
 }
 
-.brand-logo img {
+.brand-logo-img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
@@ -318,36 +282,80 @@ onMounted(() => {
 
 .brand-name {
   font-size: 14px;
+  text-align: center;
 }
 
-.phone-grid {
+.brand-detail {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.brand-info {
+  display: flex;
+  align-items: center;
+}
+
+.brand-detail-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-right: 20px;
+}
+
+.brand-title h2 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+}
+
+.brand-description {
+  color: #666;
+  font-size: 14px;
+}
+
+.brand-sort {
+  display: flex;
+  align-items: center;
+}
+
+.brand-sort span {
+  margin-right: 10px;
+  color: #666;
+}
+
+.loading-container {
+  padding: 30px;
+}
+
+.phone-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  margin-top: 20px;
 }
 
 .phone-card {
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   transition: all 0.3s;
-}
-
-.phone-card:hover {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  transform: translateY(-5px);
+  cursor: pointer;
 }
 
 .phone-image {
-  height: 200px;
-  overflow: hidden;
-}
-
-.phone-image img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: 200px;
+  object-fit: contain;
+  background-color: #f8f8f8;
 }
 
 .phone-info {
@@ -355,66 +363,61 @@ onMounted(() => {
 }
 
 .phone-name {
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   font-size: 16px;
+  font-weight: 500;
 }
 
 .phone-desc {
-  color: #606266;
-  font-size: 14px;
-  margin-bottom: 15px;
-  height: 40px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 12px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+  height: 40px;
 }
 
 .phone-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 10px;
+}
+
+.phone-price {
+  color: #f56c6c;
+  font-weight: bold;
+  font-size: 16px;
 }
 
 .phone-date {
-  color: #909399;
+  color: #999;
   font-size: 12px;
 }
 
-.select-brand-tip, .empty-message {
-  padding: 40px 0;
+.no-brand-selected {
+  background: #fff;
+  border-radius: 8px;
+  padding: 50px;
   text-align: center;
 }
 
 @media (max-width: 768px) {
-  .brand-list-container {
+  .brand-header {
     flex-direction: column;
+    align-items: flex-start;
   }
   
-  .brand-category-card {
-    width: 100%;
+  .brand-sort {
+    margin-top: 15px;
   }
   
-  .brand-list {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .brand-item {
-    width: 80px;
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .brand-logo {
-    margin-right: 0;
-    margin-bottom: 5px;
-  }
-  
-  .phone-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  .phone-list {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 </style> 

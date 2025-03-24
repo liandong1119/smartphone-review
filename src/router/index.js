@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 // 用户端组件
 const UserLayout = () => import('../views/user/UserLayout.vue')
@@ -9,16 +10,18 @@ const UserCenter = () => import('../views/user/UserCenter.vue')
 const ReviewDetail = () => import('../views/user/ReviewDetail.vue')
 const UserProfile = () => import('../views/user/UserProfile.vue')
 const NotificationList = () => import('../views/user/NotificationList.vue')
+const PhoneDetail = () => import('../views/user/PhoneDetail.vue')
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
 const ForgotPassword = () => import('../views/ForgotPassword.vue')
 
 // 管理端组件
-// const AdminLayout = () => import('../views/admin/AdminLayout.vue')
-// const UserManagement = () => import('../views/admin/UserManagement.vue')
-// const CommentManagement = () => import('../views/admin/CommentManagement.vue')
-// const AnnouncementManagement = () => import('../views/admin/AnnouncementManagement.vue')
-// const PhoneModelManagement = () => import('../views/admin/PhoneModelManagement.vue')
+const AdminLayout = () => import('../views/admin/AdminLayout.vue')
+const UserManagement = () => import('../views/admin/UserManagement.vue')
+const CommentManagement = () => import('../views/admin/CommentManagement.vue')
+const AnnouncementManagement = () => import('../views/admin/AnnouncementManagement.vue')
+const PhoneModelManagement = () => import('../views/admin/PhoneModelManagement.vue')
+const PostManagement = () => import('../views/admin/PostManagement.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -78,6 +81,12 @@ const router = createRouter({
           meta: { title: '评测详情' }
         },
         {
+          path: 'phone/:id',
+          name: 'phoneDetail',
+          component: PhoneDetail,
+          meta: { title: '手机详情' }
+        },
+        {
           path: 'user-profile/:id',
           name: 'userProfile',
           component: UserProfile,
@@ -96,38 +105,44 @@ const router = createRouter({
       redirect: '/home'
     },
     // 管理端路由
-    // {
-    //   path: '/admin',
-    //   component: AdminLayout,
-    //   redirect: '/admin/users',
-    //   meta: { requireAuth: true, requireAdmin: true },
-    //   children: [
-    //     {
-    //       path: 'users',
-    //       name: 'userManagement',
-    //       component: UserManagement,
-    //       meta: { title: '用户管理' }
-    //     },
-    //     {
-    //       path: 'comments',
-    //       name: 'commentManagement',
-    //       component: CommentManagement,
-    //       meta: { title: '评论管理' }
-    //     },
-    //     {
-    //       path: 'announcements',
-    //       name: 'announcementManagement',
-    //       component: AnnouncementManagement,
-    //       meta: { title: '公告栏管理' }
-    //     },
-    //     {
-    //       path: 'phones',
-    //       name: 'phoneModelManagement',
-    //       component: PhoneModelManagement,
-    //       meta: { title: '手机型号管理' }
-    //     }
-    //   ]
-    // },
+    {
+      path: '/admin',
+      component: AdminLayout,
+      redirect: '/admin/users',
+      meta: { requireAuth: true, requireAdmin: true },
+      children: [
+        {
+          path: 'users',
+          name: 'userManagement',
+          component: UserManagement,
+          meta: { title: '用户管理' }
+        },
+        {
+          path: 'comments',
+          name: 'commentManagement',
+          component: CommentManagement,
+          meta: { title: '评论管理' }
+        },
+        {
+          path: 'posts',
+          name: 'postManagement',
+          component: PostManagement,
+          meta: { title: '帖子管理' }
+        },
+        {
+          path: 'announcements',
+          name: 'announcementManagement',
+          component: AnnouncementManagement,
+          meta: { title: '公告栏管理' }
+        },
+        {
+          path: 'phones',
+          name: 'phoneModelManagement',
+          component: PhoneModelManagement,
+          meta: { title: '手机型号管理' }
+        }
+      ]
+    },
     // 404路由
     {
       path: '/:pathMatch(.*)*',
@@ -138,23 +153,45 @@ const router = createRouter({
 
 // 全局前置守卫
 router.beforeEach((to, from, next) => {
-  // 设置页面标题
-  document.title = to.meta.title ? `${to.meta.title} - 智能手机评测论坛` : '智能手机评测论坛'
-  
-  // 登录和权限验证逻辑（后续可根据实际情况扩展）
-  const isLoggedIn = localStorage.getItem('user') // 检查用户是否登录
-  const userInfo = isLoggedIn ? JSON.parse(localStorage.getItem('user')) : null
-  const isAdmin = userInfo && userInfo.role === 'admin' // 检查用户是否为管理员
-
-  if (to.meta.requireAuth && !isLoggedIn) {
-    // 需要登录但用户未登录
-    next({ name: 'login', query: { redirect: to.fullPath } })
-  } else if (to.meta.requireAdmin && !isAdmin) {
-    // 需要管理员权限但用户不是管理员
-    next({ name: 'home' })
-  } else {
-    next()
+  // 检查用户信息
+  const userStr = localStorage.getItem('user');
+  let user = null;
+  if (userStr) {
+    try {
+      user = JSON.parse(userStr);
+    } catch (e) {
+      localStorage.removeItem('user');
+    }
   }
+
+  // 需要登录的路由
+  if (to.matched.some(record => record.meta.requireAuth)) {
+    if (!user) {
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      });
+      return;
+    }
+    
+    // 需要管理员权限的路由
+    if (to.matched.some(record => record.meta.requireAdmin)) {
+      if (user.role !== 'admin') {
+        ElMessage.error('您没有管理员权限');
+        next({ path: '/home' });
+        return;
+      }
+    }
+  }
+  
+  // 设置页面标题
+  if (to.meta.title) {
+    document.title = `${to.meta.title} - 智能手机评测论坛`;
+  } else {
+    document.title = '智能手机评测论坛';
+  }
+  
+  next();
 })
 
 export default router

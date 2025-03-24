@@ -21,7 +21,7 @@
         <div class="content-text">{{ reviewDetail.content }}</div>
         
         <!-- 调试信息（仅在开发环境显示） -->
-        <div v-if="isDev" class="debug-info" style="font-size: 12px; color: #999; margin: 15px 0; padding: 10px; background: #f8f8f8; border-radius: 4px;">
+        <!-- <div v-if="isDev" class="debug-info" style="font-size: 12px; color: #999; margin: 15px 0; padding: 10px; background: #f8f8f8; border-radius: 4px;">
           <h4>调试信息：</h4>
           <pre>{{ JSON.stringify({ 
             id: reviewDetail.id, 
@@ -33,7 +33,7 @@
             modelId: reviewDetail.modelId,
             comments: reviewDetail.comments
           }, null, 2) }}</pre>
-        </div>
+        </div> -->
         
         <!-- 图片展示区域 -->
         <div class="images-container" v-if="reviewDetail.images && reviewDetail.images.length > 0">
@@ -47,10 +47,45 @@
         </div>
       </div>
       
+      <!-- 评分显示区域 -->
+      <div class="ratings-section" v-if="reviewDetail.rating">
+        <div class="overall-rating">
+          <span class="rating-label">综合评分:</span>
+          <el-rate v-model="reviewDetail.rating" disabled show-score :max="5" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
+        </div>
+        <div class="detailed-ratings" v-if="hasDetailedRatings">
+          <div class="rating-item" v-if="reviewDetail.appearanceRating">
+            <span class="rating-label">外观设计:</span>
+            <el-rate v-model="reviewDetail.appearanceRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
+          </div>
+          <div class="rating-item" v-if="reviewDetail.screenRating">
+            <span class="rating-label">屏幕显示:</span>
+            <el-rate v-model="reviewDetail.screenRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
+          </div>
+          <div class="rating-item" v-if="reviewDetail.performanceRating">
+            <span class="rating-label">性能体验:</span>
+            <el-rate v-model="reviewDetail.performanceRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
+          </div>
+          <div class="rating-item" v-if="reviewDetail.cameraRating">
+            <span class="rating-label">拍照效果:</span>
+            <el-rate v-model="reviewDetail.cameraRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
+          </div>
+          <div class="rating-item" v-if="reviewDetail.batteryRating">
+            <span class="rating-label">电池续航:</span>
+            <el-rate v-model="reviewDetail.batteryRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
+          </div>
+          <div class="rating-item" v-if="reviewDetail.systemRating">
+            <span class="rating-label">系统体验:</span>
+            <el-rate v-model="reviewDetail.systemRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
+          </div>
+        </div>
+      </div>
+      
       <!-- 手机标签 -->
       <div class="phone-tags">
-        <span class="phone-brand-tag">{{ reviewDetail.brand }}</span>
-        <span class="phone-model-tag">{{ reviewDetail.phoneModel || reviewDetail.model }}</span>
+        <span class="phone-brand-tag" v-if="reviewDetail.brand">{{ reviewDetail.brand }}</span>
+        <span class="phone-model-tag" v-if="reviewDetail.phoneModel">{{ reviewDetail.phoneModel }}</span>
+        <span class="phone-model-tag" v-if="!reviewDetail.phoneModel && reviewDetail.model">{{ reviewDetail.model }}</span>
       </div>
       
       <!-- 互动区域 -->
@@ -222,6 +257,18 @@ const favoriteCount = computed(() => postStore.currentPost?.favorites || 0)
 // 评测详情（从store中获取）
 const reviewDetail = computed(() => postStore.currentPost)
 const userAvatar = computed(() => userStore.userInfo?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
+
+// 判断是否有详细评分
+const hasDetailedRatings = computed(() => {
+  const review = reviewDetail.value
+  return review &&
+    (review.appearanceRating > 0 || 
+     review.screenRating > 0 || 
+     review.performanceRating > 0 || 
+     review.cameraRating > 0 || 
+     review.batteryRating > 0 || 
+     review.systemRating > 0)
+})
 
 // 添加回复相关的变量
 const replyingToIndex = ref(-1) // 当前正在回复的评论索引
@@ -660,6 +707,11 @@ const toggleReplyLike = (reply) => {
   color: #666;
 }
 
+.phone-model-tag {
+  background-color: #e8f4ff;
+  border-color: #c0d9eb;
+}
+
 .interaction-area {
   display: flex;
   gap: 30px;
@@ -920,5 +972,39 @@ const toggleReplyLike = (reply) => {
 .clickable-username:hover {
   color: #409EFF;
   text-decoration: underline;
+}
+
+/* 评分区域样式 */
+.ratings-section {
+  margin: 15px 0;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.overall-rating {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px dashed #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.detailed-ratings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.rating-item {
+  display: flex;
+  align-items: center;
+}
+
+.rating-label {
+  width: 80px;
+  font-size: 14px;
+  color: #666;
+  margin-right: 10px;
 }
 </style> 

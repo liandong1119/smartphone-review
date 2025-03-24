@@ -27,6 +27,9 @@
                   <el-dropdown-item @click="$router.push('/user-center')">
                     <el-icon><User /></el-icon>个人中心
                   </el-dropdown-item>
+                  <el-dropdown-item v-if="isAdmin" @click="$router.push('/admin')">
+                    <el-icon><EditPen /></el-icon>后台管理
+                  </el-dropdown-item>
                   <el-dropdown-item @click="$router.push('/post')">
                     <el-icon><EditPen /></el-icon>发布评测
                   </el-dropdown-item>
@@ -128,7 +131,7 @@
           </div>
         </el-card>
         
-        <!-- 管理员卡片保持不变 -->
+        <!-- 管理员卡片保持不变
         <el-card class="admin-card" v-if="isAdmin">
           <div class="card-header">
             <span>管理员</span>
@@ -137,7 +140,7 @@
           <div class="card-content">
             内容
           </div>
-        </el-card>
+        </el-card> -->
         
         <!-- 添加发布按钮在右侧底部 -->
         <div class="publish-button-container">

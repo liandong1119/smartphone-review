@@ -57,12 +57,18 @@
         </div>
         <div class="card-footer">
           <!-- 添加调试信息 -->
-          <div v-if="isDev" class="debug-info" style="font-size: 12px; color: #999; margin-bottom: 8px;">
+          <!-- <div v-if="isDev" class="debug-info" style="font-size: 12px; color: #999; margin-bottom: 8px;">
             <pre>{{ JSON.stringify({ id: post.id, brand: post.brand, phoneModel: post.phoneModel, brandId: post.brandId, modelId: post.modelId }, null, 2) }}</pre>
+          </div> -->
+          <!-- 评分显示 -->
+          <div class="phone-rating" v-if="post.rating">
+            <span class="rating-text">综合评分:</span>
+            <el-rate v-model="post.rating" disabled show-score :max="5" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
           </div>
           <div class="phone-tags">
-            <span class="phone-brand-tag">{{ post.brand }}</span>
-            <span class="phone-model-tag">{{ post.phoneModel }}</span>
+            <span class="phone-brand-tag" v-if="post.brand">{{ post.brand }}</span>
+            <span class="phone-model-tag" v-if="post.phoneModel">{{ post.phoneModel }}</span>
+            <span class="phone-model-tag" v-if="!post.phoneModel && post.model">{{ post.model }}</span>
           </div>
           <div class="interaction-buttons">
             <div class="interaction-item">
@@ -549,6 +555,19 @@ watch(searchKeyword, (newVal, oldVal) => {
   padding: 2px 10px;
   font-size: 12px;
   color: #666;
+}
+
+/* 评分样式 */
+.phone-rating {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.rating-text {
+  font-size: 13px;
+  color: #666;
+  margin-right: 10px;
 }
 
 .interaction-buttons {
