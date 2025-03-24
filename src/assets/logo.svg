@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="100" cy="100" r="95" fill="#3498db" />
+  <circle cx="100" cy="100" r="85" fill="#2980b9" />
+  
+  <!-- 手机外壳 -->
+  <rect x="60" y="40" width="80" height="120" rx="10" ry="10" fill="#ecf0f1" />
+  <rect x="65" y="55" width="70" height="90" rx="2" ry="2" fill="#34495e" />
+  
+  <!-- 手机屏幕 -->
+  <rect x="68" y="58" width="64" height="84" rx="1" ry="1" fill="#2c3e50" />
+  
+  <!-- 相机和扬声器 -->
+  <circle cx="100" cy="47" r="2" fill="#7f8c8d" />
+  <rect x="85" y="47" width="30" height="2" rx="1" ry="1" fill="#7f8c8d" />
+  
+  <!-- 主页按钮 -->
+  <circle cx="100" cy="152" r="6" stroke="#7f8c8d" stroke-width="1" fill="none" />
+  
+  <!-- 评分星星 -->
+  <g transform="translate(85, 85) scale(0.6)">
+    <!-- 第一颗星 -->
+    <polygon points="12,2 15.09,9.26 23,9.27 16.47,14.14 18.85,21.02 12,16.77 5.15,21.02 7.53,14.14 1,9.27 8.91,9.26" fill="#f1c40f" />
+    
+    <!-- 第二颗星 -->
+    <polygon points="37,2 40.09,9.26 48,9.27 41.47,14.14 43.85,21.02 37,16.77 30.15,21.02 32.53,14.14 26,9.27 33.91,9.26" fill="#f1c40f" />
+    
+    <!-- 第三颗星 -->
+    <polygon points="62,2 65.09,9.26 73,9.27 66.47,14.14 68.85,21.02 62,16.77 55.15,21.02 57.53,14.14 51,9.27 58.91,9.26" fill="#f1c40f" />
+    
+    <!-- 第四颗星 -->
+    <polygon points="87,2 90.09,9.26 98,9.27 91.47,14.14 93.85,21.02 87,16.77 80.15,21.02 82.53,14.14 76,9.27 83.91,9.26" fill="#f1c40f" />
+    
+    <!-- 第五颗星（半星） -->
+    <polygon points="112,2 115.09,9.26 123,9.27 116.47,14.14 118.85,21.02 112,16.77 105.15,21.02 107.53,14.14 101,9.27 108.91,9.26" fill="#f1c40f" opacity="0.5" />
+  </g>
+  
+  <!-- 文本"评测" -->
+  <g>
+    <text x="100" y="180" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#ecf0f1">评测</text>
+  </g>
+</svg>
