@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 const UserLayout = () => import('../views/user/UserLayout.vue')
 const Home = () => import('../views/user/Home.vue')
 const BrandList = () => import('../views/user/BrandList.vue')
+const BrandDetail = () => import('../views/user/BrandDetail.vue')
 const ReviewPost = () => import('../views/user/ReviewPost.vue')
 const UserCenter = () => import('../views/user/UserCenter.vue')
 const ReviewDetail = () => import('../views/user/ReviewDetail.vue')
@@ -63,6 +64,12 @@ const router = createRouter({
           name: 'brands',
           component: BrandList,
           meta: { title: '品牌浏览' }
+        },
+        {
+          path: 'brands/:id',
+          name: 'brandDetail',
+          component: BrandDetail,
+          meta: { title: '品牌详情' }
         },
         {
           path: 'post',

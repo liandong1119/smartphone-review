@@ -250,21 +250,17 @@ onMounted(() => {
 
 <style scoped>
 .user-layout {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background-color: #f5f5f5;
 }
 
 .header {
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
-  background-color: #fff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  height: 60px;
-  display: flex;
-  align-items: center;
+  z-index: 100;
 }
 
 .header .container {
@@ -330,14 +326,17 @@ onMounted(() => {
 .main-layout {
   display: flex;
   flex: 1;
+  background-color: #f5f7fa;
 }
 
 .left-sidebar {
-  width: 180px;
+  width: 220px;
   background-color: #fff;
-  border-right: 1px solid #e8e8e8;
-  padding: 20px 0;
-  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 60px; /* 头部高度 */
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
 .el-menu-vertical {
@@ -346,13 +345,18 @@ onMounted(() => {
 
 .content-area {
   flex: 1;
+  min-height: calc(100vh - 60px);
   padding: 20px;
+  overflow-y: auto;
 }
 
 .right-sidebar {
-  width: 250px;
-  padding: 20px 15px;
-  border-left: 1px solid #e8e8e8;
+  width: 300px;
+  padding: 20px 10px;
+  position: sticky;
+  top: 60px; /* 头部高度 */
+  height: calc(100vh - 60px);
+  overflow-y: auto;
 }
 
 .user-info-card,

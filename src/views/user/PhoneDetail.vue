@@ -90,42 +90,6 @@
             <div class="phone-description">
               <h2>产品介绍</h2>
               <div class="description-content">{{ phone.description }}</div>
-              
-              <h3>主要规格</h3>
-              <div class="specs-grid">
-                <div class="spec-item">
-                  <div class="spec-label">处理器</div>
-                  <div class="spec-value">{{ phone.processor || '暂无数据' }}</div>
-                </div>
-                <div class="spec-item">
-                  <div class="spec-label">内存</div>
-                  <div class="spec-value">{{ phone.ram || '暂无数据' }}</div>
-                </div>
-                <div class="spec-item">
-                  <div class="spec-label">存储</div>
-                  <div class="spec-value">{{ phone.storage || '暂无数据' }}</div>
-                </div>
-                <div class="spec-item">
-                  <div class="spec-label">屏幕</div>
-                  <div class="spec-value">{{ phone.screen || '暂无数据' }}</div>
-                </div>
-                <div class="spec-item">
-                  <div class="spec-label">主摄像头</div>
-                  <div class="spec-value">{{ phone.camera || '暂无数据' }}</div>
-                </div>
-                <div class="spec-item">
-                  <div class="spec-label">电池</div>
-                  <div class="spec-value">{{ phone.battery || '暂无数据' }}</div>
-                </div>
-                <div class="spec-item">
-                  <div class="spec-label">操作系统</div>
-                  <div class="spec-value">{{ phone.os || '暂无数据' }}</div>
-                </div>
-                <div class="spec-item">
-                  <div class="spec-label">尺寸</div>
-                  <div class="spec-value">{{ phone.dimensions || '暂无数据' }}</div>
-                </div>
-              </div>
             </div>
           </el-tab-pane>
           

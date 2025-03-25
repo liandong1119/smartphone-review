@@ -2,11 +2,11 @@
   <div class="admin-layout">
     <el-container class="admin-container">
       <!-- 侧边栏 -->
-      <el-aside width="220px" class="aside">
+      <el-aside :width="isCollapse ? '64px' : '220px'" class="aside">
         <div class="logo-container">
           <router-link to="/">
             <img src="@/assets/logo.png" alt="Logo" class="logo" />
-            <span class="logo-text">手机评测管理系统</span>
+            <span class="logo-text" v-show="!isCollapse">手机评测管理系统</span>
           </router-link>
         </div>
         <el-menu
@@ -15,31 +15,33 @@
           background-color="#304156"
           text-color="#bfcbd9"
           active-text-color="#409EFF"
+          :collapse="isCollapse"
+          :collapse-transition="false"
           router
         >
           <el-menu-item index="/admin/users">
             <el-icon><User /></el-icon>
-            <template #title>用户管理</template>
+            <span>用户管理</span>
           </el-menu-item>
           <el-menu-item index="/admin/posts">
             <el-icon><Document /></el-icon>
-            <template #title>帖子管理</template>
+            <span>帖子管理</span>
           </el-menu-item>
           <el-menu-item index="/admin/comments">
             <el-icon><ChatDotRound /></el-icon>
-            <template #title>评论管理</template>
+            <span>评论管理</span>
           </el-menu-item>
           <el-menu-item index="/admin/announcements">
             <el-icon><Bell /></el-icon>
-            <template #title>公告栏管理</template>
+            <span>公告栏管理</span>
           </el-menu-item>
           <el-menu-item index="/admin/phones">
             <el-icon><Cellphone /></el-icon>
-            <template #title>手机型号管理</template>
+            <span>手机型号管理</span>
           </el-menu-item>
           <el-menu-item index="/">
             <el-icon><Back /></el-icon>
-            <template #title>返回前台</template>
+            <span>返回前台</span>
           </el-menu-item>
         </el-menu>
       </el-aside>
@@ -92,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { 
@@ -125,8 +127,16 @@ const currentTitle = computed(() => {
 const adminName = ref('管理员')
 const adminAvatar = ref('')
 
+// 监听侧边栏折叠状态，更新CSS变量
+watch(isCollapse, (newValue) => {
+  document.documentElement.style.setProperty('--aside-width', newValue ? '64px' : '220px')
+})
+
 // 在组件挂载时检查管理员登录状态
 onMounted(() => {
+  // 初始化CSS变量
+  document.documentElement.style.setProperty('--aside-width', isCollapse.value ? '64px' : '220px')
+  
   const user = localStorage.getItem('user')
   if (user) {
     const userInfo = JSON.parse(user)
@@ -181,12 +191,15 @@ const handleLogout = () => {
   align-items: center;
   justify-content: center;
   background-color: #263445;
+  overflow: hidden;
 }
 
 .logo-container a {
   display: flex;
   align-items: center;
   text-decoration: none;
+  width: 100%;
+  justify-content: center;
 }
 
 .logo {
@@ -199,10 +212,15 @@ const handleLogout = () => {
   font-size: 14px;
   font-weight: bold;
   white-space: nowrap;
+  transition: opacity 0.3s;
 }
 
 .el-menu-vertical {
   border-right: none;
+}
+
+.el-menu-vertical:not(.el-menu--collapse) {
+  width: 220px;
 }
 
 .header {
@@ -212,6 +230,8 @@ const handleLogout = () => {
   align-items: center;
   justify-content: space-between;
   padding: 0 15px;
+  position: relative;
+  z-index: 1;
 }
 
 .header-left {
@@ -223,6 +243,11 @@ const handleLogout = () => {
   font-size: 20px;
   cursor: pointer;
   margin-right: 15px;
+  color: #606266;
+}
+
+.collapse-btn:hover {
+  color: #409EFF;
 }
 
 .header-right {
@@ -246,7 +271,8 @@ const handleLogout = () => {
   flex-direction: column;
   height: 100vh;
   flex: 1;
-  width: calc(100% - 220px);
+  width: calc(100% - var(--aside-width, 220px));
+  transition: width 0.3s;
 }
 
 .main {

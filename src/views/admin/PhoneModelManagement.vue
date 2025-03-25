@@ -293,8 +293,10 @@
         :rules="modelFormRules"
         label-width="100px"
       >
+        <el-divider content-position="center">基本信息</el-divider>
+        
         <el-form-item label="所属品牌" prop="brandId">
-          <el-select v-model="modelForm.brandId" placeholder="请选择品牌" style="width: 100%">
+          <el-select v-model="modelForm.brandId" placeholder="请选择品牌" filterable>
             <el-option 
               v-for="brand in brandOptions" 
               :key="brand.id" 
@@ -303,171 +305,46 @@
             />
           </el-select>
         </el-form-item>
+        
         <el-form-item label="型号名称" prop="name">
           <el-input v-model="modelForm.name" placeholder="请输入型号名称" />
         </el-form-item>
-        <el-form-item label="发布日期" prop="release">
-          <el-date-picker
-            v-model="modelForm.release"
-            type="date"
-            placeholder="选择发布日期"
-            style="width: 100%"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        <el-form-item label="参考价格" prop="price">
-          <el-input-number 
-            v-model="modelForm.price" 
-            :min="0" 
-            :precision="2" 
-            :step="100"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="手机图片" prop="image">
+        
+        <div class="form-row">
+          <el-form-item label="发布日期" prop="release" class="form-col">
+            <el-date-picker
+              v-model="modelForm.release"
+              type="date"
+              placeholder="选择发布日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+            />
+          </el-form-item>
+          <el-form-item label="参考价格" prop="price" class="form-col">
+            <el-input-number v-model="modelForm.price" :min="0" :step="100" controls-position="right" />
+          </el-form-item>
+        </div>
+        
+        <el-form-item label="型号图片" prop="image">
           <el-upload
             class="avatar-uploader"
-            action=""
+            action="/upload/image"
             :show-file-list="false"
-            :auto-upload="false"
-            :on-change="handleModelImageChange"
+            :on-success="(res) => modelForm.image = res.data.url"
+            :before-upload="beforeUpload"
           >
-            <img v-if="modelForm.image" :src="modelForm.image" class="model-image" />
+            <img v-if="modelForm.image" :src="modelForm.image" class="avatar" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
-          <div class="upload-tip">建议上传手机正面图片，尺寸比例为 1:1</div>
         </el-form-item>
         
-        <el-divider content-position="center">基本参数</el-divider>
-        
-        <div class="form-row">
-          <el-form-item label="屏幕尺寸" prop="screenSize" class="form-col">
-            <el-input v-model="modelForm.screenSize" placeholder="例如：6.7英寸" />
-          </el-form-item>
-          <el-form-item label="尺寸" prop="dimensions" class="form-col">
-            <el-input v-model="modelForm.dimensions" placeholder="例如：160.7 x 77.6 x 8.2 mm" />
-          </el-form-item>
-        </div>
-        
-        <div class="form-row">
-          <el-form-item label="重量" prop="weight" class="form-col">
-            <el-input v-model="modelForm.weight" placeholder="例如：221g" />
-          </el-form-item>
-          <el-form-item label="颜色" prop="colors" class="form-col">
-            <el-select
-              v-model="modelForm.colors"
-              multiple
-              filterable
-              allow-create
-              default-first-option
-              placeholder="请选择或输入颜色"
-              style="width: 100%"
-            >
-              <el-option label="黑色" value="黑色" />
-              <el-option label="白色" value="白色" />
-              <el-option label="蓝色" value="蓝色" />
-              <el-option label="绿色" value="绿色" />
-              <el-option label="金色" value="金色" />
-              <el-option label="银色" value="银色" />
-              <el-option label="紫色" value="紫色" />
-            </el-select>
-          </el-form-item>
-        </div>
-        
-        <el-divider content-position="center">性能配置</el-divider>
-        
-        <div class="form-row">
-          <el-form-item label="处理器" prop="processor" class="form-col">
-            <el-input v-model="modelForm.processor" placeholder="例如：骁龙8 Gen 2" />
-          </el-form-item>
-          <el-form-item label="GPU" prop="gpu" class="form-col">
-            <el-input v-model="modelForm.gpu" placeholder="例如：Adreno 740" />
-          </el-form-item>
-        </div>
-        
-        <div class="form-row">
-          <el-form-item label="内存" prop="ram" class="form-col">
-            <el-input v-model="modelForm.ram" placeholder="例如：8GB/12GB" />
-          </el-form-item>
-          <el-form-item label="存储" prop="storage" class="form-col">
-            <el-input v-model="modelForm.storage" placeholder="例如：128GB/256GB" />
-          </el-form-item>
-        </div>
-        
-        <el-divider content-position="center">显示屏</el-divider>
-        
-        <div class="form-row">
-          <el-form-item label="屏幕类型" prop="screenType" class="form-col">
-            <el-input v-model="modelForm.screenType" placeholder="例如：AMOLED" />
-          </el-form-item>
-          <el-form-item label="分辨率" prop="resolution" class="form-col">
-            <el-input v-model="modelForm.resolution" placeholder="例如：2778 x 1284" />
-          </el-form-item>
-        </div>
-        
-        <div class="form-row">
-          <el-form-item label="刷新率" prop="refreshRate" class="form-col">
-            <el-input v-model="modelForm.refreshRate" placeholder="例如：120Hz" />
-          </el-form-item>
-          <el-form-item label="亮度" prop="brightness" class="form-col">
-            <el-input v-model="modelForm.brightness" placeholder="例如：1000 nits" />
-          </el-form-item>
-        </div>
-        
-        <el-divider content-position="center">摄像系统</el-divider>
-        
-        <el-form-item label="后置摄像头" prop="camera">
-          <el-input v-model="modelForm.camera" placeholder="例如：4800万像素主摄 + 5000万像素超广角 + 1200万像素长焦" />
-        </el-form-item>
-        
-        <el-form-item label="前置摄像头" prop="frontCamera">
-          <el-input v-model="modelForm.frontCamera" placeholder="例如：1200万像素" />
-        </el-form-item>
-        
-        <el-divider content-position="center">电池与充电</el-divider>
-        
-        <div class="form-row">
-          <el-form-item label="电池容量" prop="battery" class="form-col">
-            <el-input v-model="modelForm.battery" placeholder="例如：5000mAh" />
-          </el-form-item>
-          <el-form-item label="充电功率" prop="chargingPower" class="form-col">
-            <el-input v-model="modelForm.chargingPower" placeholder="例如：67W" />
-          </el-form-item>
-        </div>
-        
-        <el-form-item label="系统版本" prop="os">
-          <el-input v-model="modelForm.os" placeholder="例如：Android 13, ColorOS 13" />
-        </el-form-item>
-        
-        <el-form-item label="详细描述" prop="description">
+        <el-form-item label="型号描述" prop="description">
           <el-input 
             v-model="modelForm.description" 
             type="textarea" 
             :rows="3" 
-            placeholder="请输入型号详细描述信息"
+            placeholder="请输入型号描述信息"
           />
-        </el-form-item>
-        
-        <el-form-item label="特色功能" prop="features">
-          <el-select
-            v-model="modelForm.features"
-            multiple
-            filterable
-            allow-create
-            default-first-option
-            placeholder="请选择或输入特色功能"
-            style="width: 100%"
-          >
-            <el-option label="IP68防水" value="IP68防水" />
-            <el-option label="无线充电" value="无线充电" />
-            <el-option label="屏下指纹" value="屏下指纹" />
-            <el-option label="人脸识别" value="人脸识别" />
-            <el-option label="高刷新率" value="高刷新率" />
-            <el-option label="快速充电" value="快速充电" />
-            <el-option label="双扬声器" value="双扬声器" />
-            <el-option label="NFC" value="NFC" />
-            <el-option label="红外遥控" value="红外遥控" />
-          </el-select>
         </el-form-item>
         
         <el-form-item label="状态" prop="status">
@@ -566,25 +443,7 @@ const modelForm = reactive({
   release: '',
   price: 0,
   image: '',
-  screenSize: '',
-  dimensions: '',
-  weight: '',
-  colors: [],
-  processor: '',
-  gpu: '',
-  ram: '',
-  storage: '',
-  screenType: '',
-  resolution: '',
-  refreshRate: '',
-  brightness: '',
-  camera: '',
-  frontCamera: '',
-  battery: '',
-  chargingPower: '',
-  os: '',
   description: '',
-  features: [],
   status: 1
 })
 
@@ -867,14 +726,7 @@ const handleAddModel = () => {
     release: '',
     price: 0,
     image: '',
-    screenSize: '',
-    cpu: '',
-    ram: '',
-    storage: '',
-    battery: '',
-    camera: '',
-    os: '',
-    features: [],
+    description: '',
     status: 1
   })
   modelDialogVisible.value = true

@@ -3011,6 +3011,43 @@ export function createMockServer() {
             };
           });
 
+          // 获取品牌详情
+          this.get('/brands/:id', (schema, request) => {
+            const brandId = parseInt(request.params.id);
+            const brand = schema.db.brands.find(brandId);
+            
+            if (!brand) {
+              return {
+                code: 404,
+                message: '品牌不存在',
+                data: null
+              };
+            }
+            
+            // 添加品牌其他详细信息
+            const brandWithDetails = {
+              ...brand,
+              // 添加默认成立年份（如果不存在）
+              founded: brand.founded || '1990年',
+              // 添加默认历史（如果不存在）
+              history: brand.history || `${brand.name}是一家知名的智能手机制造商，成立于${brand.founded || '1990年'}，总部位于${brand.country || '中国'}。多年来，${brand.name}凭借其创新的技术和优质的产品赢得了消费者的广泛认可。`,
+              // 添加默认特点（如果不存在）
+              features: brand.features || [
+                `${brand.name}以其优质的产品和创新技术闻名于世`,
+                `产品覆盖多种价位，满足不同消费者需求`,
+                `注重用户体验和产品质量`,
+                `持续推出新的技术和功能`,
+                `在全球智能手机市场占有一定份额`
+              ]
+            };
+            
+            return {
+              code: 200,
+              message: '获取成功',
+              data: brandWithDetails
+            };
+          });
+
           // 获取某品牌下的手机型号
           this.get('/brands/:id/models', (schema, request) => {
             const brandId = parseInt(request.params.id);
