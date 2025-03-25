@@ -2,83 +2,126 @@
   <div class="review-detail-container">
     <div class="review-detail-card" v-if="reviewDetail">
       <!-- 用户信息头部 -->
-      <div class="user-info">
-        <el-avatar 
-          :size="36" 
-          :src="reviewDetail.userAvatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
-          @click="navigateToUserProfile(reviewDetail.userId)"
-          class="clickable-avatar"
-        ></el-avatar>
-        <div class="user-meta">
-          <span class="username clickable-username" @click="navigateToUserProfile(reviewDetail.userId)">{{ reviewDetail.username }}</span>
-          <span class="datetime">{{ reviewDetail.createTime }}</span>
+      <div class="post-header">
+        <div class="user-info">
+          <el-avatar 
+            :size="48" 
+            :src="reviewDetail.userAvatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'"
+            @click="navigateToUserProfile(reviewDetail.userId)"
+            class="clickable-avatar"
+          ></el-avatar>
+          <div class="user-meta">
+            <div class="username clickable-username" @click="navigateToUserProfile(reviewDetail.userId)">{{ reviewDetail.username }}</div>
+            <div class="post-time">{{ reviewDetail.createTime }}</div>
+          </div>
+        </div>
+        
+        <!-- 在详情页，评分展示采用更加突出的样式 -->
+        <div class="post-action-buttons">
+          <el-button type="primary" plain size="small" v-if="reviewDetail.phoneModel" 
+            @click="router.push(`/phone/${reviewDetail.modelId}`)">
+            查看手机详情
+          </el-button>
+        </div>
+      </div>
+      
+      <!-- 评测标题 -->
+      <div class="post-title">
+        <h1>{{ reviewDetail.title }}</h1>
+      </div>
+      
+      <!-- 综合评分部分 -->
+      <div class="overall-rating">
+        <el-rate
+          v-model="reviewDetail.rating"
+          disabled
+          show-score
+          text-color="#ff9900"
+          score-template="{value} 分"
+        />
+        <div class="rating-note">综合评分（由下方各项评分计算得出）</div>
+      </div>
+      
+      <!-- 详情页的大型评分展示区域 -->
+      <div class="detailed-rating-section" v-if="reviewDetail.rating">
+        <div class="overall-rating-card">
+          <div class="rating-label">综合评分</div>
+          <div class="large-rating-value">{{ reviewDetail.rating.toFixed(1) }}</div>
+          <div class="rating-stars">
+            <el-rate 
+              v-model="reviewDetail.rating" 
+              disabled 
+              :max="5" 
+              :colors="['#99A9BF', '#F7BA2A', '#FF9900']" 
+              :size="24"
+            />
+          </div>
+        </div>
+        
+        <!-- 各项分数的可视化展示 -->
+        <div class="rating-breakdown" v-if="hasDetailedRatings">
+          <div class="breakdown-row" v-if="reviewDetail.appearanceRating">
+            <span class="breakdown-label">外观设计</span>
+            <div class="breakdown-progress">
+              <div class="breakdown-bar" :style="{width: `${(reviewDetail.appearanceRating/5)*100}%`}"></div>
+            </div>
+            <span class="breakdown-value">{{ reviewDetail.appearanceRating.toFixed(1) }}</span>
+          </div>
+          
+          <div class="breakdown-row" v-if="reviewDetail.screenRating">
+            <span class="breakdown-label">屏幕显示</span>
+            <div class="breakdown-progress">
+              <div class="breakdown-bar" :style="{width: `${(reviewDetail.screenRating/5)*100}%`}"></div>
+            </div>
+            <span class="breakdown-value">{{ reviewDetail.screenRating.toFixed(1) }}</span>
+          </div>
+          
+          <div class="breakdown-row" v-if="reviewDetail.performanceRating">
+            <span class="breakdown-label">性能体验</span>
+            <div class="breakdown-progress">
+              <div class="breakdown-bar" :style="{width: `${(reviewDetail.performanceRating/5)*100}%`}"></div>
+            </div>
+            <span class="breakdown-value">{{ reviewDetail.performanceRating.toFixed(1) }}</span>
+          </div>
+          
+          <div class="breakdown-row" v-if="reviewDetail.cameraRating">
+            <span class="breakdown-label">拍照效果</span>
+            <div class="breakdown-progress">
+              <div class="breakdown-bar" :style="{width: `${(reviewDetail.cameraRating/5)*100}%`}"></div>
+            </div>
+            <span class="breakdown-value">{{ reviewDetail.cameraRating.toFixed(1) }}</span>
+          </div>
+          
+          <div class="breakdown-row" v-if="reviewDetail.batteryRating">
+            <span class="breakdown-label">续航表现</span>
+            <div class="breakdown-progress">
+              <div class="breakdown-bar" :style="{width: `${(reviewDetail.batteryRating/5)*100}%`}"></div>
+            </div>
+            <span class="breakdown-value">{{ reviewDetail.batteryRating.toFixed(1) }}</span>
+          </div>
+          
+          <div class="breakdown-row" v-if="reviewDetail.systemRating">
+            <span class="breakdown-label">系统体验</span>
+            <div class="breakdown-progress">
+              <div class="breakdown-bar" :style="{width: `${(reviewDetail.systemRating/5)*100}%`}"></div>
+            </div>
+            <span class="breakdown-value">{{ reviewDetail.systemRating.toFixed(1) }}</span>
+          </div>
         </div>
       </div>
       
       <!-- 评测内容区域 -->
-      <div class="review-content">
-        <div class="title">{{ reviewDetail.title }}</div>
-        <div class="content-text">{{ reviewDetail.content }}</div>
-        
-        <!-- 调试信息（仅在开发环境显示） -->
-        <!-- <div v-if="isDev" class="debug-info" style="font-size: 12px; color: #999; margin: 15px 0; padding: 10px; background: #f8f8f8; border-radius: 4px;">
-          <h4>调试信息：</h4>
-          <pre>{{ JSON.stringify({ 
-            id: reviewDetail.id, 
-            userId: reviewDetail.userId,
-            username: reviewDetail.username,
-            brand: reviewDetail.brand, 
-            phoneModel: reviewDetail.phoneModel, 
-            brandId: reviewDetail.brandId, 
-            modelId: reviewDetail.modelId,
-            comments: reviewDetail.comments
-          }, null, 2) }}</pre>
-        </div> -->
-        
-        <!-- 图片展示区域 -->
-        <div class="images-container" v-if="reviewDetail.images && reviewDetail.images.length > 0">
-          <div 
-            v-for="(image, index) in reviewDetail.images" 
-            :key="index" 
-            class="image-item"
-            :style="{ backgroundImage: `url(${image})` }"
-            @click="viewImage(image)"
-          ></div>
-        </div>
-      </div>
+      <div class="content-text">{{ reviewDetail.content }}</div>
       
-      <!-- 评分显示区域 -->
-      <div class="ratings-section" v-if="reviewDetail.rating">
-        <div class="overall-rating">
-          <span class="rating-label">综合评分:</span>
-          <el-rate v-model="reviewDetail.rating" disabled show-score :max="5" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-        </div>
-        <div class="detailed-ratings" v-if="hasDetailedRatings">
-          <div class="rating-item" v-if="reviewDetail.appearanceRating">
-            <span class="rating-label">外观设计:</span>
-            <el-rate v-model="reviewDetail.appearanceRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-          </div>
-          <div class="rating-item" v-if="reviewDetail.screenRating">
-            <span class="rating-label">屏幕显示:</span>
-            <el-rate v-model="reviewDetail.screenRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-          </div>
-          <div class="rating-item" v-if="reviewDetail.performanceRating">
-            <span class="rating-label">性能体验:</span>
-            <el-rate v-model="reviewDetail.performanceRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-          </div>
-          <div class="rating-item" v-if="reviewDetail.cameraRating">
-            <span class="rating-label">拍照效果:</span>
-            <el-rate v-model="reviewDetail.cameraRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-          </div>
-          <div class="rating-item" v-if="reviewDetail.batteryRating">
-            <span class="rating-label">电池续航:</span>
-            <el-rate v-model="reviewDetail.batteryRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-          </div>
-          <div class="rating-item" v-if="reviewDetail.systemRating">
-            <span class="rating-label">系统体验:</span>
-            <el-rate v-model="reviewDetail.systemRating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-          </div>
-        </div>
+      <!-- 评测图片区域 -->
+      <div class="review-images" v-if="reviewDetail.images && reviewDetail.images.length > 0">
+        <div 
+          v-for="(image, index) in reviewDetail.images" 
+          :key="index" 
+          class="review-image"
+          :style="{ backgroundImage: `url(${image})` }"
+          @click="viewImage(image)"
+        ></div>
       </div>
       
       <!-- 手机标签 -->
@@ -630,66 +673,80 @@ const toggleReplyLike = (reply) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.user-info {
+.post-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-}
-
-.user-meta {
-  margin-left: 10px;
-}
-
-.username {
-  font-weight: bold;
-  font-size: 14px;
-  display: block;
-  color: #333;
-}
-
-.datetime {
-  color: #999;
-  font-size: 12px;
-}
-
-.review-content {
   margin-bottom: 20px;
 }
 
-.title {
-  font-size: 18px;
+.user-info {
+  display: flex;
+  align-items: center;
+}
+
+.user-meta {
+  margin-left: 15px;
+}
+
+.username {
   font-weight: 500;
+  font-size: 16px;
+  margin-bottom: 5px;
+  cursor: pointer;
+}
+
+.username:hover {
+  color: #409EFF;
+}
+
+.post-time {
+  color: #909399;
+  font-size: 13px;
+}
+
+.post-action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.post-title {
+  margin-bottom: 20px;
+}
+
+.post-title h1 {
+  font-size: 24px;
+  font-weight: 600;
   color: #333;
-  margin-bottom: 10px;
+  line-height: 1.3;
 }
 
 .content-text {
   font-size: 15px;
   line-height: 1.6;
   color: #333;
-  margin: 15px 0;
+  margin: 20px 0;
+  white-space: pre-wrap;
 }
 
-.images-container {
-  display: flex;
+.review-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  margin: 20px 0;
 }
 
-.image-item {
-  width: 200px;
-  height: 150px;
-  background-color: #eee;
-  border-radius: 5px;
+.review-image {
+  height: 180px;
+  border-radius: 8px;
   background-size: cover;
   background-position: center;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.3s;
 }
 
-.image-item:hover {
-  transform: scale(1.03);
+.review-image:hover {
+  transform: scale(1.02);
 }
 
 .phone-tags {
@@ -974,37 +1031,115 @@ const toggleReplyLike = (reply) => {
   text-decoration: underline;
 }
 
-/* 评分区域样式 */
-.ratings-section {
-  margin: 15px 0;
-  padding: 15px;
+/* 移除旧版评分详情区样式，使用新的详情展示 */
+.rating-details {
+  display: none;
+}
+
+/* 媒体查询：在移动设备上调整评分区布局 */
+@media (max-width: 768px) {
+  .detailed-rating-section {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .overall-rating-card {
+    width: 100%;
+  }
+}
+
+/* 添加详情页评分区块样式 */
+.detailed-rating-section {
+  display: flex;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 20px 0;
+  gap: 30px;
+}
+
+.overall-rating-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
   border-radius: 8px;
-  background-color: #f9f9f9;
-}
-
-.overall-rating {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-  border-bottom: 1px dashed #e0e0e0;
-  padding-bottom: 10px;
-}
-
-.detailed-ratings {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 12px;
-}
-
-.rating-item {
-  display: flex;
-  align-items: center;
+  padding: 15px;
+  min-width: 140px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .rating-label {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.large-rating-value {
+  font-size: 36px;
+  font-weight: bold;
+  color: #FF9900;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.rating-stars {
+  margin-top: 5px;
+}
+
+.rating-breakdown {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.breakdown-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.breakdown-label {
   width: 80px;
   font-size: 14px;
-  color: #666;
-  margin-right: 10px;
+  color: #606266;
+}
+
+.breakdown-progress {
+  flex: 1;
+  height: 10px;
+  background-color: #EBEEF5;
+  border-radius: 5px;
+  margin: 0 15px;
+  overflow: hidden;
+}
+
+.breakdown-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #FFD666 0%, #FFA940 50%, #FF7A45 100%);
+  border-radius: 5px;
+}
+
+.breakdown-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #606266;
+  width: 30px;
+  text-align: right;
+}
+
+/* 评分样式 */
+.overall-rating {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.rating-note {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
 }
 </style> 

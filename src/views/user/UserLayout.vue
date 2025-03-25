@@ -71,7 +71,11 @@
           </el-menu-item>
           <el-menu-item index="/brands">
             <el-icon><Cellphone /></el-icon>
-            <span>手机品牌</span>
+            <span>品牌浏览</span>
+          </el-menu-item>
+          <el-menu-item index="/phones">
+            <el-icon><Search /></el-icon>
+            <span>手机搜索</span>
           </el-menu-item>
         </el-menu>
       </div>
@@ -87,10 +91,25 @@
         <el-card class="announcement-card">
           <div class="card-header">
             <span>公告栏</span>
+            <router-link to="/announcements" class="more-link">查看更多</router-link>
           </div>
-          <div class="card-content">
-            系统公告：欢迎来到智能手机评测论坛，分享您的使用体验和评测心得！
+          <div v-if="loading" class="announcement-loading">
+            <el-skeleton :rows="2" animated />
           </div>
+          <template v-else>
+            <div v-if="announcements.length === 0" class="no-announcements">
+              暂无公告
+            </div>
+            <div v-else class="announcements-list">
+              <div v-for="announcement in displayAnnouncements" :key="announcement.id" class="announcement-item">
+                <div class="announcement-title">
+                  <el-tag v-if="announcement.isTop" size="small" type="danger">置顶</el-tag>
+                  {{ announcement.title }}
+                </div>
+                <div class="announcement-time">{{ formatDate(announcement.createTime) }}</div>
+              </div>
+            </div>
+          </template>
         </el-card>
         
         <!-- 用户信息卡片，添加更多详细内容 -->
@@ -156,10 +175,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowDown, User, EditPen, SwitchButton, Search } from '@element-plus/icons-vue'
+import { ArrowDown, User, EditPen, SwitchButton, Search, HomeFilled, Clock, Histogram, Cellphone, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import NotificationCenter from '@/components/NotificationCenter.vue'
 import { useUserStore } from '@/stores/user'
+import announcementApi from '@/api/modules/announcement'
 
 const router = useRouter()
 const route = useRoute()
@@ -181,6 +201,51 @@ const handleLogout = () => {
   userStore.logout()
   router.push('/login')
 }
+
+// 公告相关
+const loading = ref(true)
+const announcements = ref([])
+
+// 只显示最新的2条公告，优先显示置顶公告
+const displayAnnouncements = computed(() => {
+  // 先按置顶排序，再按时间排序
+  const sorted = [...announcements.value].sort((a, b) => {
+    // 优先按是否置顶排序
+    if (a.isTop !== b.isTop) {
+      return a.isTop ? -1 : 1
+    }
+    // 然后按创建时间排序（新的在前）
+    return new Date(b.createTime) - new Date(a.createTime)
+  })
+  
+  // 只返回前2条
+  return sorted.slice(0, 2)
+})
+
+// 获取公告
+const fetchAnnouncements = async () => {
+  loading.value = true
+  try {
+    const response = await announcementApi.getAnnouncements()
+    announcements.value = response || []
+  } catch (error) {
+    console.error('获取公告失败:', error)
+    ElMessage.error('获取公告失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('zh-CN')
+}
+
+onMounted(() => {
+  fetchAnnouncements()
+})
 </script>
 
 <style scoped>
@@ -433,5 +498,61 @@ const handleLogout = () => {
   position: relative;
   z-index: 1;
   padding: 0 8px 0 0;
+}
+
+.announcement-card {
+  margin-bottom: 20px;
+}
+
+.announcement-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.announcement-card .more-link {
+  font-size: 12px;
+  color: #409EFF;
+}
+
+.announcements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.announcement-item {
+  padding: 8px 0;
+  border-bottom: 1px dashed #eee;
+}
+
+.announcement-item:last-child {
+  border-bottom: none;
+}
+
+.announcement-title {
+  font-size: 14px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.announcement-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.no-announcements {
+  color: #999;
+  font-size: 14px;
+  padding: 10px 0;
+  text-align: center;
+}
+
+.announcement-loading {
+  padding: 10px 0;
 }
 </style> 

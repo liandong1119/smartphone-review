@@ -166,6 +166,36 @@
               </div>
             </el-tab-pane>
             
+            <el-tab-pane label="收藏手机" name="favoritePhones">
+              <div class="empty-placeholder" v-if="favoritePhones.length === 0">
+                <el-empty description="暂无收藏的手机型号" />
+              </div>
+              
+              <el-row v-else :gutter="20" class="favorites-grid">
+                <el-col :xs="24" :sm="12" :md="8" v-for="phone in favoritePhones" :key="phone.id">
+                  <el-card class="favorite-phone-card" shadow="hover" @click="viewPhone(phone.id)">
+                    <img :src="phone.image" class="favorite-phone-image" />
+                    <div class="favorite-phone-info">
+                      <div class="favorite-phone-title">{{ phone.name }}</div>
+                      <div class="favorite-phone-brand">{{ phone.brand.name }}</div>
+                      <div class="favorite-phone-price">¥{{ phone.price }}</div>
+                    </div>
+                  </el-card>
+                </el-col>
+              </el-row>
+              
+              <div class="pagination-container" v-if="favoritePhones.length > 0">
+                <el-pagination
+                  v-model:current-page="favoritePhonePage"
+                  v-model:page-size="favoritePhonePageSize"
+                  :page-sizes="[6, 12, 24]"
+                  background
+                  layout="total, sizes, prev, pager, next"
+                  :total="totalFavoritePhones"
+                />
+              </div>
+            </el-tab-pane>
+            
             <el-tab-pane label="账户安全" name="security">
               <div class="security-section">
                 <h3 class="section-title">账户安全</h3>
@@ -382,6 +412,8 @@ import { useRouter } from 'vue-router'
 import { EditPen, Delete, Plus, Lock, Message, Iphone, ChatDotRound, Connection, Warning } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { createRules, validateEmail, validateMobile, validatePassword, validateConfirmPassword } from '@/utils/validate'
+import phoneApi from '@/api/modules/phone'
+import instance from '@/utils/http'
 
 const router = useRouter()
 const activeTab = ref('reviews')
@@ -440,6 +472,12 @@ const favoritePage = ref(1)
 const favoritePageSize = ref(6)
 const totalFavorites = ref(0)
 const userFavorites = ref([])
+
+// 收藏手机型号相关
+const favoritePhonePage = ref(1)
+const favoritePhonePageSize = ref(6)
+const favoritePhones = ref([])
+const totalFavoritePhones = ref(0)
 
 // 修改密码表单
 const passwordForm = ref({
@@ -514,6 +552,9 @@ const handleTabClick = (tab) => {
       break
     case 'favorites':
       fetchUserFavorites()
+      break
+    case 'favoritePhones':
+      fetchFavoritePhones()
       break
     case 'security':
       // 处理账户安全标签页的逻辑
@@ -605,6 +646,26 @@ const fetchUserFavorites = () => {
     ]
     totalFavorites.value = userFavorites.value.length
   }, 300)
+}
+
+// 获取收藏的手机型号
+const fetchFavoritePhones = async () => {
+  try {
+    const response = await phoneApi.getFavoritePhones()
+    
+    if (response && response.data) {
+      favoritePhones.value = response.data
+      totalFavoritePhones.value = response.data.length
+    } else {
+      favoritePhones.value = []
+      totalFavoritePhones.value = 0
+    }
+  } catch (error) {
+    console.error('获取收藏的手机型号失败:', error)
+    ElMessage.error('获取收藏的手机型号失败')
+    favoritePhones.value = []
+    totalFavoritePhones.value = 0
+  }
 }
 
 // 查看评测详情
@@ -946,6 +1007,11 @@ const hidePhone = (phone) => {
   return phone.substr(0, 3) + '****' + phone.substr(7)
 }
 
+// 跳转到手机详情页
+const viewPhone = (phoneId) => {
+  router.push(`/phone/${phoneId}`)
+}
+
 // 组件加载时初始化数据
 onMounted(() => {
   // 从localStorage获取用户信息
@@ -1082,44 +1148,89 @@ onMounted(() => {
 }
 
 .favorites-grid {
-  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .favorite-card {
   margin-bottom: 20px;
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .favorite-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .favorite-image {
   width: 100%;
-  height: 160px;
+  height: 150px;
   object-fit: cover;
+  border-radius: 4px;
 }
 
 .favorite-info {
-  padding: 10px;
+  padding: 10px 0;
 }
 
 .favorite-title {
-  font-weight: bold;
-  margin-bottom: 8px;
+  font-weight: 500;
+  margin-bottom: 5px;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
 }
 
 .favorite-meta {
   display: flex;
   justify-content: space-between;
-  color: #909399;
+  color: #999;
   font-size: 12px;
+}
+
+/* 收藏手机样式 */
+.favorite-phone-card {
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+}
+
+.favorite-phone-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.favorite-phone-image {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  background-color: #f8f8f8;
+}
+
+.favorite-phone-info {
+  padding: 15px 10px;
+}
+
+.favorite-phone-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.favorite-phone-brand {
+  color: #606266;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.favorite-phone-price {
+  color: #f56c6c;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .pagination-container {

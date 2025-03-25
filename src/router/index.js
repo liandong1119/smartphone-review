@@ -11,6 +11,8 @@ const ReviewDetail = () => import('../views/user/ReviewDetail.vue')
 const UserProfile = () => import('../views/user/UserProfile.vue')
 const NotificationList = () => import('../views/user/NotificationList.vue')
 const PhoneDetail = () => import('../views/user/PhoneDetail.vue')
+const AnnouncementCenter = () => import('../views/user/AnnouncementCenter.vue')
+const PhoneSearch = () => import('../views/user/PhoneSearch.vue')
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
 const ForgotPassword = () => import('../views/ForgotPassword.vue')
@@ -87,6 +89,12 @@ const router = createRouter({
           meta: { title: '手机详情' }
         },
         {
+          path: 'phones',
+          name: 'phoneSearch',
+          component: PhoneSearch,
+          meta: { title: '手机搜索' }
+        },
+        {
           path: 'user-profile/:id',
           name: 'userProfile',
           component: UserProfile,
@@ -97,6 +105,12 @@ const router = createRouter({
           name: 'notificationList',
           component: NotificationList,
           meta: { title: '通知列表', requireAuth: true }
+        },
+        {
+          path: 'announcements',
+          name: 'announcementCenter',
+          component: AnnouncementCenter,
+          meta: { title: '公告中心' }
         }
       ]
     },

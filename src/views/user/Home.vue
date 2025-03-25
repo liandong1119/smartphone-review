@@ -44,8 +44,17 @@
               <span class="datetime">{{ post.createTime }}</span>
             </div>
           </div>
-          <div class="content-text" @click="viewDetail(post.id)">{{ post.content }}</div>
+          
+          <!-- 将评分移到右侧并美化 -->
+          <div class="post-rating" v-if="post.rating">
+            <span class="rating-value">{{ post.rating.toFixed(1) }}</span>
+            <el-rate v-model="post.rating" disabled :max="5" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
+          </div>
         </div>
+        
+        <div class="post-title" @click="viewDetail(post.id)">{{ post.title }}</div>
+        <div class="content-text" @click="viewDetail(post.id)">{{ post.content }}</div>
+        
         <div class="preview-images">
           <div 
             v-for="(image, index) in post.images" 
@@ -55,84 +64,76 @@
             @click="viewImage(image)"
           ></div>
         </div>
+        
         <div class="card-footer">
-          <!-- 添加调试信息 -->
-          <!-- <div v-if="isDev" class="debug-info" style="font-size: 12px; color: #999; margin-bottom: 8px;">
-            <pre>{{ JSON.stringify({ id: post.id, brand: post.brand, phoneModel: post.phoneModel, brandId: post.brandId, modelId: post.modelId }, null, 2) }}</pre>
-          </div> -->
-          <!-- 评分显示 -->
-          <div class="phone-rating" v-if="post.rating">
-            <span class="rating-text">综合评分:</span>
-            <el-rate v-model="post.rating" disabled show-score :max="5" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-          </div>
+          <!-- 手机品牌和型号标签 -->
           <div class="phone-tags">
-            <span class="phone-brand-tag" v-if="post.brand">{{ post.brand }}</span>
-            <span class="phone-model-tag" v-if="post.phoneModel">{{ post.phoneModel }}</span>
-            <span class="phone-model-tag" v-if="!post.phoneModel && post.model">{{ post.model }}</span>
+            <span v-if="post.brand" class="phone-tag brand-tag">{{ post.brand }}</span>
+            <span v-if="post.phoneModel" class="phone-tag model-tag">{{ post.phoneModel }}</span>
           </div>
-          <div class="interaction-buttons">
-            <div class="interaction-item">
-              <el-button size="small" circle @click="toggleComment(post)">
+          
+          <div class="interaction-stats">
+            <span class="stat-item">
+              <el-icon><View /></el-icon> {{ post.views || 0 }}
+            </span>
+            <span class="stat-item">
+              <el-button size="small" circle @click.stop="toggleComment(post)">
                 <el-icon><ChatLineRound /></el-icon>
               </el-button>
-              <span class="count">{{ post.comments }}</span>
-            </div>
-            <div class="interaction-item">
+              <span>{{ post.comments || 0 }}</span>
+            </span>
+            <span class="stat-item">
               <el-button 
                 size="small" 
-                circle 
-                :type="post.isLiked ? 'danger' : ''" 
-                @click="toggleLike(post)"
+                circle
+                :type="post.isLiked ? 'danger' : ''"
+                @click.stop="toggleLike(post)"
               >
-                <span class="custom-icon like-icon" :class="{ 'is-liked': post.isLiked }">♥</span>
+                <el-icon><CaretTop /></el-icon>
               </el-button>
-              <span class="count">{{ post.likes }}</span>
-            </div>
-            <div class="interaction-item">
+              <span>{{ post.likes || 0 }}</span>
+            </span>
+            <span class="stat-item">
               <el-button 
                 size="small" 
-                circle 
-                :type="post.isFavorited ? 'warning' : ''" 
-                @click="toggleFavorite(post)"
+                circle
+                :type="post.isFavorited ? 'warning' : ''"
+                @click.stop="toggleFavorite(post)"
               >
                 <el-icon>
                   <star-filled v-if="post.isFavorited" />
                   <star v-else />
                 </el-icon>
               </el-button>
-              <span class="count">{{ post.favorites || 0 }}</span>
-            </div>
-            <div class="interaction-item">
-              <el-button 
-                size="small" 
-                type="primary" 
-                @click="viewDetail(post.id)"
-              >
-                查看详情
-              </el-button>
-            </div>
+              <span>{{ post.favorites || 0 }}</span>
+            </span>
           </div>
         </div>
         
-        <!-- 评论区域（当点击评论按钮时显示） -->
-        <div class="comments-area" v-if="post.showComments">
-          <div class="comment-list">
-            <div v-for="(comment, index) in post.commentList" :key="index" class="comment-item">
+        <!-- 评论区域 -->
+        <div v-if="post.showComments" class="comments-area">
+          <div v-if="post.commentList && post.commentList.length > 0" class="comment-list">
+            <div v-for="comment in post.commentList" :key="comment.id" class="comment-item">
               <span class="comment-user">{{ comment.username }}:</span>
               <span class="comment-content">{{ comment.content }}</span>
+              <span class="comment-time">{{ comment.createTime }}</span>
             </div>
           </div>
-          <div class="comment-input">
+          <div v-else class="no-comments">
+            暂无评论，来发表第一条评论吧~
+          </div>
+          
+          <div class="comment-form">
             <el-input 
               v-model="newComment" 
-              placeholder="添加评论..." 
-              @keyup.enter="addComment(post)"
-              size="small"
-            >
-              <template #append>
-                <el-button @click="addComment(post)">发送</el-button>
-              </template>
-            </el-input>
+              type="textarea" 
+              :rows="2" 
+              placeholder="发表评论..." 
+              resize="none"
+            ></el-input>
+            <el-button type="primary" size="small" @click="addComment(post)" :disabled="!newComment.trim()">
+              发表评论
+            </el-button>
           </div>
         </div>
       </div>
@@ -155,7 +156,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { ChatLineRound, Search, Share, Star, StarFilled } from '@element-plus/icons-vue'
+import { ChatLineRound, Search, Share, Star, StarFilled, View, CaretTop } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { usePostStore } from '@/stores/post'
@@ -460,13 +461,15 @@ watch(searchKeyword, (newVal, oldVal) => {
 }
 
 .card-header {
-  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
 }
 
 .user-meta {
@@ -496,6 +499,32 @@ watch(searchKeyword, (newVal, oldVal) => {
   color: #999;
   font-size: 12px;
   margin-left: 10px;
+}
+
+.post-rating {
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.rating-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #FF9900;
+  margin-right: 8px;
+}
+
+.post-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.post-title:hover {
+  color: #409EFF;
 }
 
 .content-text {
@@ -548,7 +577,7 @@ watch(searchKeyword, (newVal, oldVal) => {
   gap: 8px;
 }
 
-.phone-brand-tag, .phone-model-tag {
+.phone-tag {
   background-color: #f5f5f5;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
@@ -557,33 +586,44 @@ watch(searchKeyword, (newVal, oldVal) => {
   color: #666;
 }
 
-/* 评分样式 */
-.phone-rating {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.rating-text {
-  font-size: 13px;
-  color: #666;
-  margin-right: 10px;
-}
-
-.interaction-buttons {
+.interaction-stats {
   display: flex;
   gap: 15px;
 }
 
-.interaction-item {
+.stat-item {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
-.count {
-  font-size: 13px;
-  color: #666;
+.custom-icon {
+  font-style: normal;
+  line-height: 1;
+  transition: color 0.3s, transform 0.2s;
+  display: inline-block;
+}
+
+.like-icon {
+  font-size: 16px;
+  color: #999;
+}
+
+.like-icon.is-liked {
+  color: #ff6b6b;
+  transform: scale(1.1);
+}
+
+/* 修改点赞按钮样式 */
+.el-button.is-danger {
+  background-color: rgba(245, 108, 108, 0.1) !important;
+  border-color: #ff6b6b !important;
+}
+
+/* 修改收藏按钮样式 */
+.el-button.is-warning {
+  background-color: rgba(230, 162, 60, 0.1) !important;
+  border-color: #e6a23c !important;
 }
 
 /* 评论区域样式 */
@@ -615,8 +655,28 @@ watch(searchKeyword, (newVal, oldVal) => {
   color: #333;
 }
 
-.comment-input {
+.comment-time {
+  font-size: 12px;
+  color: #999;
+  margin-left: 5px;
+}
+
+.no-comments {
+  color: #909399;
+  text-align: center;
+  padding: 10px 0;
+  font-size: 13px;
+}
+
+.comment-form {
   margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment-form .el-button {
+  align-self: flex-end;
 }
 
 /* 分页容器样式 */
@@ -624,34 +684,5 @@ watch(searchKeyword, (newVal, oldVal) => {
   display: flex;
   justify-content: center;
   margin: 30px 0;
-}
-
-.custom-icon {
-  font-style: normal;
-  line-height: 1;
-  transition: color 0.3s, transform 0.2s;
-  display: inline-block;
-}
-
-.like-icon {
-  font-size: 16px;
-  color: #999;
-}
-
-.like-icon.is-liked {
-  color: #ff6b6b;
-  transform: scale(1.1);
-}
-
-/* 修改点赞按钮样式 */
-.el-button.is-danger {
-  background-color: rgba(245, 108, 108, 0.1) !important;
-  border-color: #ff6b6b !important;
-}
-
-/* 修改收藏按钮样式 */
-.el-button.is-warning {
-  background-color: rgba(230, 162, 60, 0.1) !important;
-  border-color: #e6a23c !important;
 }
 </style> 

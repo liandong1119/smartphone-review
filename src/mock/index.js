@@ -434,6 +434,45 @@ const announcements = [
   }
 ];
 
+// 模拟用户收藏数据
+const userFavorites = [
+  {
+    id: 1,
+    userId: 1,
+    type: 'phone',
+    itemId: 1, // iPhone 15 Pro
+    createTime: '2023-10-15'
+  },
+  {
+    id: 2,
+    userId: 1,
+    type: 'phone',
+    itemId: 3, // Mate60 Pro
+    createTime: '2023-10-10'
+  },
+  {
+    id: 3,
+    userId: 2,
+    type: 'phone',
+    itemId: 2, // 小米14
+    createTime: '2023-10-12'
+  },
+  {
+    id: 4,
+    userId: 1,
+    type: 'post',
+    itemId: 2, // 小米14充电测试
+    createTime: '2023-09-25'
+  },
+  {
+    id: 5,
+    userId: 1, 
+    type: 'post',
+    itemId: 3, // 华为Mate60 Pro实测
+    createTime: '2023-09-20'
+  }
+];
+
 // 创建模拟服务器
 export function createMockServer() {
   return createServer({
@@ -589,7 +628,9 @@ export function createMockServer() {
         users: fixedUsers,
         posts: fixedPosts,
         comments: fixedComments,
-        notifications: notifications
+        notifications: notifications,
+        announcements: announcements,
+        userFavorites: userFavorites
       });
 
       console.log('模拟数据初始化完成');
@@ -766,45 +807,88 @@ export function createMockServer() {
       
       // 用户收藏的评测
       this.get('/user/favorites', (schema, request) => {
-        const { page = 1, pageSize = 10 } = request.queryParams;
+        const { queryParams } = request;
+        const type = queryParams?.type || 'post';
         
-        // 模拟收藏的帖子（随机选择3个）
-        let favoritePosts = schema.db.posts.filter(p => p.id % 3 === 0);
+        // 检查用户是否登录
+        if (!localStorage.getItem('token')) {
+          return {
+            code: 401,
+            message: '请先登录'
+          };
+        }
         
-        // 按时间排序
-        favoritePosts = favoritePosts.sort((a, b) => 
-          new Date(b.createTime) - new Date(a.createTime)
-        );
+        // 获取当前用户ID
+        const userIdStr = localStorage.getItem('userId');
+        const userId = userIdStr ? parseInt(userIdStr) : null;
         
-        // 分页
-        const start = (page - 1) * pageSize;
-        const end = start + parseInt(pageSize);
-        const paginatedPosts = favoritePosts.slice(start, end);
+        if (!userId) {
+          return {
+            code: 401,
+            message: '请先登录'
+          };
+        }
         
-        // 关联用户和手机信息
-        const postsWithDetails = paginatedPosts.map(post => {
-          const user = schema.db.users.find(u => u.id === post.userId);
-          const brand = schema.db.brands.find(b => b.id === post.brandId);
-          const model = schema.db.phoneModels.find(m => m.id === post.modelId);
+        if (type === 'post') {
+          // 获取用户收藏的文章
+          // 这里应该从数据库中查询，这里简化为返回几个模拟数据
+          return {
+            code: 200,
+            message: '获取成功',
+            data: [
+              {
+                id: 1,
+                title: 'iPhone 15 Pro 上手体验',
+                cover: 'https://img.alicdn.com/imgextra/i2/1979300282/O1CN01kqNFkQ1UiO7POzQO0_!!1979300282.jpg',
+                author: '数码达人',
+                collectTime: '2023-09-16'
+              },
+              {
+                id: 3,
+                title: '华为Mate60 Pro实测',
+                cover: 'https://img.alicdn.com/imgextra/i2/2201476544168/O1CN0108yQNR1IOqeBzsFHG_!!2201476544168.jpg',
+                author: '摄影控',
+                collectTime: '2023-09-07'
+              }
+            ]
+          };
+        } else if (type === 'phone') {
+          // 获取用户收藏的手机
+          // 从localStorage获取收藏的手机ID列表
+          const favoritePhoneIdsStr = localStorage.getItem('favoritePhones');
+          let favoritePhoneIds = [];
+          
+          try {
+            favoritePhoneIds = favoritePhoneIdsStr ? JSON.parse(favoritePhoneIdsStr) : [];
+          } catch (e) {
+            console.error('解析收藏手机列表失败:', e);
+            favoritePhoneIds = [];
+          }
+          
+          // 根据ID查找对应的手机详情
+          const favoritePhones = [];
+          
+          for (const phoneId of favoritePhoneIds) {
+            const phone = phones.find(p => p.id === parseInt(phoneId));
+            if (phone) {
+              const brand = brands.find(b => b.id === phone.brandId);
+              favoritePhones.push({
+                ...phone,
+                brand: brand || { name: '未知品牌' }
+              });
+            }
+          }
           
           return {
-            ...post,
-            username: user?.username || 'Unknown',
-            userAvatar: user?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-            brand: brand?.name || 'Unknown Brand',
-            phoneModel: model?.name || 'Unknown Model'
+            code: 200,
+            message: '获取成功',
+            data: favoritePhones
           };
-        });
+        }
         
         return {
-          code: 200,
-          message: '获取成功',
-          data: {
-            records: postsWithDetails,
-            total: favoritePosts.length,
-            page: parseInt(page),
-            pageSize: parseInt(pageSize)
-          }
+          code: 400,
+          message: '无效的请求参数'
         };
       });
 
@@ -864,6 +948,10 @@ export function createMockServer() {
           const phoneModel = schema.db.phoneModels.find(post.modelId)
           const brand = phoneModel ? schema.db.brands.find(phoneModel.brandId) : null
           
+          // 模拟是否点赞和收藏状态
+          const isLiked = Math.random() > 0.5
+          const isFavorited = Math.random() > 0.7
+          
           return {
             ...post,
             username: user ? user.username : 'Unknown User',
@@ -872,7 +960,12 @@ export function createMockServer() {
             phoneModel: phoneModel ? phoneModel.name : '',
             model: phoneModel ? phoneModel.name : '',  // 为了兼容性同时提供model字段
             brandId: brand ? brand.id : null,
-            modelId: phoneModel ? phoneModel.id : null
+            modelId: phoneModel ? phoneModel.id : null,
+            isLiked: isLiked,
+            isFavorited: isFavorited,
+            likeCount: post.likes || 0,
+            commentCount: post.comments || 0,
+            favoriteCount: post.favorites || 0
           }
         })
         
@@ -909,6 +1002,11 @@ export function createMockServer() {
         const phoneModel = schema.db.phoneModels.find(post.modelId)
         const brand = phoneModel ? schema.db.brands.find(phoneModel.brandId) : null
         
+        // 获取用户是否已点赞或收藏
+        // 这里只是模拟，实际应该根据当前登录用户状态返回
+        const isLiked = Math.random() > 0.5
+        const isFavorited = Math.random() > 0.7
+        
         const postWithDetails = {
           ...post,
           username: user ? user.username : 'Unknown User',
@@ -917,13 +1015,13 @@ export function createMockServer() {
           phoneModel: phoneModel ? phoneModel.name : '',
           model: phoneModel ? phoneModel.name : '',  // 为了兼容性同时提供model字段
           brandId: brand ? brand.id : null,
-          modelId: phoneModel ? phoneModel.id : null
+          modelId: phoneModel ? phoneModel.id : null,
+          isLiked: isLiked,
+          isFavorited: isFavorited,
+          likeCount: post.likes || 0,
+          commentCount: post.comments || 0,
+          favoriteCount: post.favorites || 0
         }
-        
-        // 获取用户是否已点赞或收藏
-        // 这里只是模拟，实际应该根据当前登录用户状态返回
-        postWithDetails.isLiked = Math.random() > 0.5
-        postWithDetails.isFavorited = Math.random() > 0.5
         
         return {
           code: 200,
@@ -1272,6 +1370,28 @@ export function createMockServer() {
       
       // 取消收藏
       this.delete('/posts/:id/favorite', (schema, request) => {
+        const id = request.params.id;
+        const post = schema.db.posts.find(id);
+        
+        if (!post) {
+          return {
+            code: 404,
+            message: '评测不存在'
+          };
+        }
+        
+        // 模拟取消收藏
+        post.favorites = Math.max(0, (post.favorites || 0) - 1);
+        schema.db.posts.update(id, post);
+        
+        return {
+          code: 200,
+          message: '取消收藏成功'
+        };
+      });
+      
+      // 取消收藏（POST方法版本）
+      this.post('/posts/:id/unfavorite', (schema, request) => {
         const id = request.params.id;
         const post = schema.db.posts.find(id);
         
@@ -1993,6 +2113,733 @@ export function createMockServer() {
           message: 'success',
           data: phoneWithBrand
         }
+      });
+
+      // 用户收藏/取消收藏手机型号
+      this.post('/user/favorites', (schema, request) => {
+        const { requestBody } = request;
+        const { type, id, action } = JSON.parse(requestBody);
+        
+        // 检查用户是否登录
+        if (!localStorage.getItem('token')) {
+          return {
+            code: 401,
+            message: '请先登录'
+          };
+        }
+        
+        // 获取当前用户ID
+        const userIdStr = localStorage.getItem('userId');
+        const userId = userIdStr ? parseInt(userIdStr) : null;
+        
+        if (!userId) {
+          return {
+            code: 401,
+            message: '请先登录'
+          };
+        }
+        
+        if (!type || !id || !action) {
+          return {
+            code: 400,
+            message: '请求参数不完整'
+          };
+        }
+        
+        if (action !== 'add' && action !== 'remove') {
+          return {
+            code: 400,
+            message: '无效的操作类型'
+          };
+        }
+        
+        if (type === 'phone') {
+          // 从localStorage获取收藏的手机ID列表
+          const favoritePhoneIdsStr = localStorage.getItem('favoritePhones');
+          let favoritePhoneIds = [];
+          
+          try {
+            favoritePhoneIds = favoritePhoneIdsStr ? JSON.parse(favoritePhoneIdsStr) : [];
+          } catch (e) {
+            console.error('解析收藏手机列表失败:', e);
+            favoritePhoneIds = [];
+          }
+          
+          // 根据操作类型添加或移除收藏
+          const phoneId = parseInt(id);
+          
+          if (action === 'add') {
+            if (!favoritePhoneIds.includes(phoneId)) {
+              favoritePhoneIds.push(phoneId);
+            }
+          } else if (action === 'remove') {
+            const index = favoritePhoneIds.indexOf(phoneId);
+            if (index !== -1) {
+              favoritePhoneIds.splice(index, 1);
+            }
+          }
+          
+          // 更新localStorage
+          localStorage.setItem('favoritePhones', JSON.stringify(favoritePhoneIds));
+          
+          return {
+            code: 200,
+            message: action === 'add' ? '添加收藏成功' : '取消收藏成功'
+          };
+        } else if (type === 'post') {
+          // 处理文章收藏的逻辑
+          return {
+            code: 200,
+            message: action === 'add' ? '收藏成功' : '取消收藏成功'
+          };
+        }
+        
+        return {
+          code: 400,
+          message: '无效的类型'
+        };
+      });
+
+      // 获取用户收藏列表
+      this.get('/user/favorites', (schema, request) => {
+        const { queryParams } = request;
+        const type = queryParams?.type || 'post';
+        
+        // 检查用户是否登录
+        if (!localStorage.getItem('token')) {
+          return {
+            code: 401,
+            message: '请先登录'
+          };
+        }
+        
+        // 获取当前用户ID
+        const userIdStr = localStorage.getItem('userId');
+        const userId = userIdStr ? parseInt(userIdStr) : null;
+        
+        if (!userId) {
+          return {
+            code: 401,
+            message: '请先登录'
+          };
+        }
+        
+        if (type === 'post') {
+          // 获取用户收藏的文章
+          // 这里应该从数据库中查询，这里简化为返回几个模拟数据
+          return {
+            code: 200,
+            message: '获取成功',
+            data: [
+              {
+                id: 1,
+                title: 'iPhone 15 Pro 上手体验',
+                cover: 'https://img.alicdn.com/imgextra/i2/1979300282/O1CN01kqNFkQ1UiO7POzQO0_!!1979300282.jpg',
+                author: '数码达人',
+                collectTime: '2023-09-16'
+              },
+              {
+                id: 3,
+                title: '华为Mate60 Pro实测',
+                cover: 'https://img.alicdn.com/imgextra/i2/2201476544168/O1CN0108yQNR1IOqeBzsFHG_!!2201476544168.jpg',
+                author: '摄影控',
+                collectTime: '2023-09-07'
+              }
+            ]
+          };
+        } else if (type === 'phone') {
+          // 获取用户收藏的手机
+          // 从localStorage获取收藏的手机ID列表
+          const favoritePhoneIdsStr = localStorage.getItem('favoritePhones');
+          let favoritePhoneIds = [];
+          
+          try {
+            favoritePhoneIds = favoritePhoneIdsStr ? JSON.parse(favoritePhoneIdsStr) : [];
+          } catch (e) {
+            console.error('解析收藏手机列表失败:', e);
+            favoritePhoneIds = [];
+          }
+          
+          // 根据ID查找对应的手机详情
+          const favoritePhones = [];
+          
+          for (const phoneId of favoritePhoneIds) {
+            const phone = phones.find(p => p.id === parseInt(phoneId));
+            if (phone) {
+              const brand = brands.find(b => b.id === phone.brandId);
+              favoritePhones.push({
+                ...phone,
+                brand: brand || { name: '未知品牌' }
+              });
+            }
+          }
+          
+          return {
+            code: 200,
+            message: '获取成功',
+            data: favoritePhones
+          };
+        }
+        
+        return {
+          code: 400,
+          message: '无效的请求参数'
+        };
+      });
+
+      // 添加或移除收藏
+      this.post('/user/favorites', (schema, request) => {
+        const { requestBody } = request;
+        const { type, id, action } = JSON.parse(requestBody);
+        const itemId = parseInt(id);
+        
+        // 验证参数
+        if (!type || !id || !action) {
+          return {
+            code: 400,
+            message: '参数不完整',
+            data: null
+          };
+        }
+        
+        // 验证ID是否存在
+        if (type === 'phone') {
+          const phone = schema.db.phoneModels.find(itemId);
+          if (!phone) {
+            return {
+              code: 404,
+              message: '未找到该手机型号',
+              data: null
+            };
+          }
+          
+          // 处理手机收藏
+          const favoritePhones = JSON.parse(localStorage.getItem('favoritePhones') || '[]');
+          
+          if (action === 'add') {
+            // 添加收藏
+            if (!favoritePhones.includes(itemId)) {
+              favoritePhones.push(itemId);
+            }
+            localStorage.setItem('favoritePhones', JSON.stringify(favoritePhones));
+          } else if (action === 'remove') {
+            // 移除收藏
+            const index = favoritePhones.indexOf(itemId);
+            if (index > -1) {
+              favoritePhones.splice(index, 1);
+            }
+            localStorage.setItem('favoritePhones', JSON.stringify(favoritePhones));
+          }
+        } else if (type === 'post') {
+          const post = schema.db.posts.find(itemId);
+          if (!post) {
+            return {
+              code: 404,
+              message: '未找到该评测',
+              data: null
+            };
+          }
+          
+          // 处理评测收藏
+          const favoritePosts = JSON.parse(localStorage.getItem('favoritedPosts') || '[]');
+          
+          if (action === 'add') {
+            // 添加收藏
+            if (!favoritePosts.includes(itemId)) {
+              favoritePosts.push(itemId);
+            }
+            localStorage.setItem('favoritedPosts', JSON.stringify(favoritePosts));
+          } else if (action === 'remove') {
+            // 移除收藏
+            const index = favoritePosts.indexOf(itemId);
+            if (index > -1) {
+              favoritePosts.splice(index, 1);
+            }
+            localStorage.setItem('favoritedPosts', JSON.stringify(favoritePosts));
+          }
+        }
+        
+        return {
+          code: 200,
+          message: action === 'add' ? '添加收藏成功' : '取消收藏成功',
+          data: null
+        };
+      });
+
+      // 获取品牌列表
+      this.get('/brands', (schema) => {
+        const brands = schema.db.brands;
+        return {
+          code: 200,
+          message: '获取成功',
+          data: brands
+        };
+      });
+
+      // 获取某品牌下的手机型号
+      this.get('/brands/:id/models', (schema, request) => {
+        const brandId = parseInt(request.params.id);
+        const models = schema.db.phoneModels.where({ brandId });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: models
+        };
+      });
+
+      // 获取手机详情
+      this.get('/phones/:id', (schema, request) => {
+        const id = parseInt(request.params.id);
+        const phone = schema.db.phoneModels.find(id);
+        
+        if (!phone) {
+          return {
+            code: 404,
+            message: '手机型号不存在'
+          };
+        }
+        
+        // 获取品牌信息
+        const brand = schema.db.brands.find(phone.brandId);
+        
+        // 查询相关评测数量
+        const reviewCount = schema.db.posts.where({ modelId: id }).length;
+        
+        // 计算平均评分
+        const reviews = schema.db.posts.where({ modelId: id });
+        let avgRating = 0;
+        
+        if (reviews.length > 0) {
+          const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+          avgRating = totalRating / reviews.length;
+        }
+        
+        // 增加一些信息
+        const phoneWithDetails = {
+          ...phone,
+          brand: brand ? { id: brand.id, name: brand.name, logo: brand.logo } : null,
+          reviewCount,
+          rating: avgRating
+        };
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: phoneWithDetails
+        };
+      });
+
+      // 搜索手机
+      this.get('/phones', (schema, request) => {
+        const { 
+          keyword, 
+          brandId, 
+          minPrice, 
+          maxPrice,
+          sort,
+          page = 1, 
+          limit = 12 
+        } = request.queryParams;
+        
+        let phones = schema.db.phoneModels.all().models;
+        
+        // 关键词搜索
+        if (keyword) {
+          const lowercaseKeyword = keyword.toLowerCase();
+          phones = phones.filter(phone => {
+            const phoneModel = phone.name.toLowerCase();
+            const brand = schema.db.brands.find(phone.brandId);
+            const brandName = brand ? brand.name.toLowerCase() : '';
+            
+            return phoneModel.includes(lowercaseKeyword) || 
+                   brandName.includes(lowercaseKeyword);
+          });
+        }
+        
+        // 品牌筛选
+        if (brandId) {
+          const brandIdInt = parseInt(brandId);
+          phones = phones.filter(phone => phone.brandId === brandIdInt);
+        }
+        
+        // 价格区间筛选
+        if (minPrice && maxPrice) {
+          const min = parseInt(minPrice);
+          const max = parseInt(maxPrice);
+          phones = phones.filter(phone => phone.price >= min && phone.price <= max);
+        } else if (minPrice) {
+          const min = parseInt(minPrice);
+          phones = phones.filter(phone => phone.price >= min);
+        } else if (maxPrice) {
+          const max = parseInt(maxPrice);
+          phones = phones.filter(phone => phone.price <= max);
+        }
+        
+        // 排序
+        if (sort) {
+          switch (sort) {
+            case 'price_asc':
+              phones.sort((a, b) => a.price - b.price);
+              break;
+            case 'price_desc':
+              phones.sort((a, b) => b.price - a.price);
+              break;
+            case 'rating_desc':
+              // 需要计算每个手机的平均评分
+              phones.sort((a, b) => {
+                const aReviews = schema.db.posts.where({ modelId: a.id });
+                const bReviews = schema.db.posts.where({ modelId: b.id });
+                
+                let aRating = 0, bRating = 0;
+                
+                if (aReviews.length > 0) {
+                  const totalRating = aReviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+                  aRating = totalRating / aReviews.length;
+                }
+                
+                if (bReviews.length > 0) {
+                  const totalRating = bReviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+                  bRating = totalRating / bReviews.length;
+                }
+                
+                return bRating - aRating;
+              });
+              break;
+            case 'newest':
+            default:
+              // 默认按发布日期排序（最新的在前）
+              phones.sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
+              break;
+          }
+        }
+        
+        // 分页处理
+        const pageInt = parseInt(page);
+        const limitInt = parseInt(limit);
+        const start = (pageInt - 1) * limitInt;
+        const end = start + limitInt;
+        const paginatedPhones = phones.slice(start, end);
+        
+        // 为每个手机添加品牌信息和评分
+        const phonesWithDetails = paginatedPhones.map(phone => {
+          const brand = schema.db.brands.find(phone.brandId);
+          
+          // 计算平均评分
+          const reviews = schema.db.posts.where({ modelId: phone.id });
+          let rating = 0;
+          
+          if (reviews.length > 0) {
+            const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+            rating = totalRating / reviews.length;
+          }
+          
+          return {
+            ...phone,
+            brand: brand ? { id: brand.id, name: brand.name, logo: brand.logo } : null,
+            rating
+          };
+        });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: {
+            records: phonesWithDetails,
+            total: phones.length,
+            page: pageInt,
+            limit: limitInt
+          }
+        };
+      });
+
+      // 获取热门手机
+      this.get('/phones/hot', (schema) => {
+        // 按照popularity排序，取前10个
+        const hotPhones = schema.db.phoneModels
+          .all()
+          .models
+          .sort((a, b) => b.popularity - a.popularity)
+          .slice(0, 10);
+        
+        // 添加品牌信息
+        const phonesWithBrand = hotPhones.map(phone => {
+          const brand = schema.db.brands.find(phone.brandId);
+          return {
+            ...phone,
+            brand: brand ? { id: brand.id, name: brand.name, logo: brand.logo } : null
+          };
+        });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: phonesWithBrand
+        };
+      });
+
+      // 获取相关手机
+      this.get('/phones/:id/related', (schema, request) => {
+        const id = parseInt(request.params.id);
+        const { limit = 6 } = request.queryParams;
+        const limitInt = parseInt(limit);
+        
+        const phone = schema.db.phoneModels.find(id);
+        
+        if (!phone) {
+          return {
+            code: 404,
+            message: '手机型号不存在'
+          };
+        }
+        
+        // 获取同品牌的其他手机
+        const sameBrandPhones = schema.db.phoneModels
+          .where({ brandId: phone.brandId })
+          .filter(p => p.id !== id)
+          .models;
+        
+        // 如果同品牌手机不够，再获取其他品牌但价格相近的手机
+        let relatedPhones = [...sameBrandPhones];
+        
+        if (relatedPhones.length < limitInt) {
+          const priceRange = 1000; // 价格相近范围
+          const otherBrandPhones = schema.db.phoneModels
+            .where(p => p.brandId !== phone.brandId && 
+                       p.price >= phone.price - priceRange && 
+                       p.price <= phone.price + priceRange)
+            .models
+            .slice(0, limitInt - relatedPhones.length);
+          
+          relatedPhones = [...relatedPhones, ...otherBrandPhones];
+        }
+        
+        // 如果还不够，添加热门手机
+        if (relatedPhones.length < limitInt) {
+          const hotPhones = schema.db.phoneModels
+            .all()
+            .models
+            .sort((a, b) => b.popularity - a.popularity)
+            .filter(p => p.id !== id && !relatedPhones.some(rp => rp.id === p.id))
+            .slice(0, limitInt - relatedPhones.length);
+          
+          relatedPhones = [...relatedPhones, ...hotPhones];
+        }
+        
+        // 限制返回数量
+        relatedPhones = relatedPhones.slice(0, limitInt);
+        
+        // 添加品牌信息
+        const phonesWithBrand = relatedPhones.map(phone => {
+          const brand = schema.db.brands.find(phone.brandId);
+          return {
+            ...phone,
+            brand: brand ? { id: brand.id, name: brand.name, logo: brand.logo } : null
+          };
+        });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: phonesWithBrand
+        };
+      });
+
+      // 获取某手机的评测
+      this.get('/phones/:id/reviews', (schema, request) => {
+        const phoneId = parseInt(request.params.id);
+        const { page = 1, limit = 10 } = request.queryParams;
+        
+        const posts = schema.db.posts.where({ modelId: phoneId }).models;
+        const total = posts.length;
+        
+        // 分页
+        const pageInt = parseInt(page);
+        const limitInt = parseInt(limit);
+        const start = (pageInt - 1) * limitInt;
+        const end = start + limitInt;
+        const paginatedPosts = posts.slice(start, end);
+        
+        // 添加用户信息
+        const postsWithUser = paginatedPosts.map(post => {
+          const user = schema.db.users.find(post.userId);
+          const model = schema.db.phoneModels.find(post.modelId);
+          const brand = model ? schema.db.brands.find(model.brandId) : null;
+          
+          return {
+            ...post,
+            user: user ? {
+              id: user.id,
+              username: user.username,
+              avatar: user.avatar
+            } : null,
+            brand: brand ? brand.name : '',
+            model: model ? model.name : ''
+          };
+        });
+        
+        return {
+          code: 200,
+          message: '获取成功',
+          data: {
+            records: postsWithUser,
+            total,
+            page: pageInt,
+            limit: limitInt
+          }
+        };
+      });
+
+      // 获取用户收藏
+      this.get('/user/favorites', (schema, request) => {
+        const { queryParams } = request;
+        const type = queryParams?.type || 'post';
+        
+        // 检查用户是否登录
+        if (!localStorage.getItem('token')) {
+          return {
+            code: 401,
+            message: '请先登录'
+          };
+        }
+        
+        // 获取当前用户ID
+        const userIdStr = localStorage.getItem('userId');
+        const userId = userIdStr ? parseInt(userIdStr) : null;
+        
+        if (!userId) {
+          return {
+            code: 401,
+            message: '请先登录'
+          };
+        }
+        
+        if (type === 'post') {
+          // 获取用户收藏的文章
+          // 这里应该从数据库中查询，这里简化为返回几个模拟数据
+          return {
+            code: 200,
+            message: '获取成功',
+            data: [
+              {
+                id: 1,
+                title: 'iPhone 15 Pro 上手体验',
+                cover: 'https://img.alicdn.com/imgextra/i2/1979300282/O1CN01kqNFkQ1UiO7POzQO0_!!1979300282.jpg',
+                author: '数码达人',
+                collectTime: '2023-09-16'
+              },
+              {
+                id: 3,
+                title: '华为Mate60 Pro实测',
+                cover: 'https://img.alicdn.com/imgextra/i2/2201476544168/O1CN0108yQNR1IOqeBzsFHG_!!2201476544168.jpg',
+                author: '摄影控',
+                collectTime: '2023-09-07'
+              }
+            ]
+          };
+        } else if (type === 'phone') {
+          // 获取用户收藏的手机
+          // 从localStorage获取收藏的手机ID列表
+          const favoritePhoneIdsStr = localStorage.getItem('favoritePhones');
+          let favoritePhoneIds = [];
+          
+          try {
+            favoritePhoneIds = favoritePhoneIdsStr ? JSON.parse(favoritePhoneIdsStr) : [];
+          } catch (e) {
+            console.error('解析收藏手机列表失败:', e);
+            favoritePhoneIds = [];
+          }
+          
+          // 根据ID查找对应的手机详情
+          const favoritePhones = [];
+          
+          for (const phoneId of favoritePhoneIds) {
+            const phone = phones.find(p => p.id === parseInt(phoneId));
+            if (phone) {
+              const brand = brands.find(b => b.id === phone.brandId);
+              favoritePhones.push({
+                ...phone,
+                brand: brand || { name: '未知品牌' }
+              });
+            }
+          }
+          
+          return {
+            code: 200,
+            message: '获取成功',
+            data: favoritePhones
+          };
+        }
+        
+        return {
+          code: 400,
+          message: '无效的请求参数'
+        };
+      });
+
+      // 添加/删除收藏
+      this.post('/user/favorites', (schema, request) => {
+        const attrs = JSON.parse(request.requestBody);
+        const { type, id, action } = attrs;
+        
+        // 默认为当前登录用户
+        const userId = 1;
+        
+        if (action === 'add') {
+          // 检查是否已收藏
+          const existingFavorite = schema.db.userFavorites.findBy({ 
+            userId, 
+            type, 
+            itemId: parseInt(id) 
+          });
+          
+          if (existingFavorite) {
+            return {
+              code: 400,
+              message: '已经收藏过了'
+            };
+          }
+          
+          // 添加收藏
+          schema.db.userFavorites.insert({
+            userId,
+            type,
+            itemId: parseInt(id),
+            createTime: new Date().toISOString()
+          });
+          
+          return {
+            code: 200,
+            message: '收藏成功'
+          };
+        } else if (action === 'remove') {
+          // 查找收藏记录
+          const favorite = schema.db.userFavorites.findBy({ 
+            userId, 
+            type, 
+            itemId: parseInt(id) 
+          });
+          
+          if (!favorite) {
+            return {
+              code: 400,
+              message: '收藏不存在'
+            };
+          }
+          
+          // 删除收藏
+          schema.db.userFavorites.remove(favorite.id);
+          
+          return {
+            code: 200,
+            message: '取消收藏成功'
+          };
+        }
+        
+        return {
+          code: 400,
+          message: '无效的操作'
+        };
       });
     }
   });

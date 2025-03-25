@@ -20,6 +20,35 @@ const phoneApi = {
   // 获取热门手机型号
   getHotPhones() {
     return instance.get('/phones/hot');
+  },
+  
+  // 搜索手机
+  searchPhones(params) {
+    return instance.get('/phones', { params });
+  },
+  
+  // 获取用户收藏的手机
+  getFavoritePhones() {
+    return instance.get('/user/favorites', { params: { type: 'phone' } });
+  },
+  
+  // 收藏/取消收藏手机
+  toggleFavoritePhone(phoneId, action) {
+    return instance.post('/user/favorites', {
+      type: 'phone',
+      id: phoneId,
+      action: action // 'add' 或 'remove'
+    });
+  },
+  
+  // 获取某手机的评论评测
+  getPhoneReviews(phoneId, params) {
+    return instance.get(`/phones/${phoneId}/reviews`, { params });
+  },
+  
+  // 获取相关/推荐手机
+  getRelatedPhones(phoneId, limit = 6) {
+    return instance.get(`/phones/${phoneId}/related`, { params: { limit } });
   }
 };
 

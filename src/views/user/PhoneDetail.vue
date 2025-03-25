@@ -11,43 +11,75 @@
       </div>
 
       <template v-else>
-        <!-- 手机概览部分 -->
-        <div class="phone-overview">
+        <!-- 手机基本信息 -->
+        <div class="phone-info-section">
           <div class="phone-gallery">
-            <el-carousel :interval="4000" type="card" height="400px">
+            <el-carousel height="400px" indicator-position="outside" arrow="always" v-if="phoneImages.length > 0">
               <el-carousel-item v-for="(image, index) in phoneImages" :key="index">
                 <img :src="image" :alt="phone.name" class="carousel-image" />
               </el-carousel-item>
             </el-carousel>
+            <div class="placeholder-image" v-else>
+              <el-image src="@/assets/placeholder.png" fit="contain"></el-image>
+            </div>
           </div>
-
+          
           <div class="phone-info">
-            <div class="brand-tag">{{ phone.brandName }}</div>
-            <h1 class="phone-name">{{ phone.name }}</h1>
-            <div class="phone-price">¥{{ phone.price }}</div>
-            
-            <div class="phone-meta">
-              <div class="meta-item">
-                <span class="meta-label">上市日期：</span>
-                <span class="meta-value">{{ formatDate(phone.releaseDate) }}</span>
+            <div class="phone-info-header">
+              <div class="phone-brand-info" v-if="phone.brand">
+                <img :src="phone.brand.logo" alt="品牌logo" class="brand-logo">
+                <span class="brand-name">{{ phone.brand.name }}</span>
               </div>
-              <div class="meta-item">
-                <span class="meta-label">评测数量：</span>
-                <span class="meta-value">{{ phone.reviewCount || 0 }}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">人气指数：</span>
-                <span class="meta-value">
-                  <el-rate v-model="phone.popularity" disabled show-score :max="5" />
-                </span>
+              <div class="favorite-btn" :class="{ 'favorited': isFavorite }" @click="togglePhoneFavorite">
+                <el-icon :size="20" :color="isFavorite ? '#ff9900' : '#909399'">
+                  <star-filled v-if="isFavorite" />
+                  <star v-else />
+                </el-icon>
+                <span>{{ isFavorite ? '已收藏' : '收藏' }}</span>
               </div>
             </div>
-
-            <div class="phone-actions">
-              <el-button type="primary" @click="goToPost">发布该机型评测</el-button>
-              <el-button @click="addToFavorites" :icon="isFavorite ? 'StarFilled' : 'Star'">
-                {{ isFavorite ? '已收藏' : '收藏' }}
-              </el-button>
+            
+            <h1 class="phone-name">{{ phone.name }}</h1>
+            
+            <!-- 评分模块 -->
+            <div class="phone-rating-card" v-if="phone.rating">
+              <div class="phone-rating-header">
+                <span class="rating-title">综合评分</span>
+                <span class="rating-value">{{ phone.rating.toFixed(1) }}</span>
+              </div>
+              
+              <el-rate 
+                v-model="phone.rating" 
+                disabled 
+                :max="5" 
+                :colors="['#99A9BF', '#F7BA2A', '#FF9900']" 
+                class="rating-stars"
+              />
+              
+              <div class="rating-stats">
+                <span class="review-count">{{ totalReviews || 0 }}条评测</span>
+              </div>
+            </div>
+            
+            <!-- 手机规格信息 -->
+            <div class="phone-specs">
+              <div class="spec-item">
+                <div class="spec-label">价格</div>
+                <div class="spec-value price-value">¥{{ phone.price }}</div>
+              </div>
+              <div class="spec-item" v-if="phone.releaseDate">
+                <div class="spec-label">发布日期</div>
+                <div class="spec-value">{{ formatDate(phone.releaseDate) }}</div>
+              </div>
+              <div class="spec-item" v-if="phone.description">
+                <div class="spec-label">产品简介</div>
+                <div class="spec-value description-value">{{ phone.description }}</div>
+              </div>
+            </div>
+            
+            <div class="action-buttons">
+              <el-button type="primary" @click="goToPost">发布评测</el-button>
+              <el-button @click="viewAllReviews">查看所有评测</el-button>
             </div>
           </div>
         </div>
@@ -121,47 +153,75 @@
                 <div v-for="review in reviews" :key="review.id" class="review-card">
                   <div class="review-header">
                     <div class="review-user-info">
-                      <el-avatar :size="40" :src="review.userAvatar"></el-avatar>
+                      <el-avatar :size="40" :src="review.userAvatar" @click="navigateToUserProfile(review.userId)" class="clickable-avatar"></el-avatar>
                       <div class="review-user-meta">
-                        <div class="review-username">{{ review.username }}</div>
+                        <div class="review-username clickable-username" @click="navigateToUserProfile(review.userId)">{{ review.username }}</div>
                         <div class="review-date">{{ formatDate(review.createTime) }}</div>
                       </div>
                     </div>
                     <div class="review-rating">
-                      <el-rate v-model="review.rating" disabled />
-                      <span class="rating-text">{{ review.rating.toFixed(1) }}</span>
+                      <span class="rating-value">{{ review.rating.toFixed(1) }}</span>
+                      <el-rate v-model="review.rating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
                     </div>
                   </div>
                   
-                  <div class="review-title">{{ review.title }}</div>
-                  <div class="review-content">{{ review.content }}</div>
+                  <div class="review-title" @click="viewFullReview(review.id)">{{ review.title }}</div>
+                  <div class="review-content" @click="viewFullReview(review.id)">{{ review.content }}</div>
                   
                   <div v-if="review.images && review.images.length > 0" class="review-images">
-                    <el-image
-                      v-for="(image, index) in review.images.slice(0, 3)"
-                      :key="index"
-                      :src="image"
-                      fit="cover"
-                      class="review-image"
-                      :preview-src-list="review.images"
-                    ></el-image>
+                    <div 
+                      v-for="(image, index) in review.images.slice(0, 3)" 
+                      :key="index" 
+                      class="preview-image"
+                      :style="{ backgroundImage: `url(${image})` }"
+                      @click="viewImage(image)"
+                    ></div>
                     <div v-if="review.images.length > 3" class="more-images">
                       +{{ review.images.length - 3 }}
                     </div>
                   </div>
                   
-                  <div class="review-footer">
-                    <el-button text @click="viewFullReview(review.id)">
-                      查看完整评测
-                    </el-button>
-                    <div class="review-stats">
+                  <div class="card-footer">
+                    <!-- 手机品牌和型号标签 -->
+                    <div class="phone-tags">
+                      <span v-if="review.brand" class="phone-tag brand-tag">{{ review.brand }}</span>
+                      <span v-if="review.phoneModel" class="phone-tag model-tag">{{ review.phoneModel }}</span>
+                    </div>
+                    
+                    <div class="interaction-stats">
                       <span class="stat-item">
-                        <el-icon><ChatLineRound /></el-icon>
-                        {{ review.commentCount || 0 }}
+                        <el-icon><View /></el-icon> {{ review.views || 0 }}
                       </span>
                       <span class="stat-item">
-                        <el-icon><CaretTop /></el-icon>
-                        {{ review.likeCount || 0 }}
+                        <el-button size="small" circle @click="viewFullReview(review.id)">
+                          <el-icon><ChatLineRound /></el-icon>
+                        </el-button>
+                        <span>{{ review.commentCount || 0 }}</span>
+                      </span>
+                      <span class="stat-item">
+                        <el-button 
+                          size="small" 
+                          circle
+                          :type="review.isLiked ? 'danger' : ''"
+                          @click="toggleLike(review)"
+                        >
+                          <el-icon><CaretTop /></el-icon>
+                        </el-button>
+                        <span>{{ review.likeCount || 0 }}</span>
+                      </span>
+                      <span class="stat-item">
+                        <el-button 
+                          size="small" 
+                          circle
+                          :type="review.isFavorited ? 'warning' : ''"
+                          @click="toggleFavorite(review)"
+                        >
+                          <el-icon>
+                            <star-filled v-if="review.isFavorited" />
+                            <star v-else />
+                          </el-icon>
+                        </el-button>
+                        <span>{{ review.favoriteCount || 0 }}</span>
                       </span>
                     </div>
                   </div>
@@ -217,11 +277,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { ChatLineRound, CaretTop, Star, StarFilled } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { ChatLineRound, CaretTop, Star, StarFilled, View } from '@element-plus/icons-vue'
 import instance from '@/utils/http'
+import { useUserStore } from '@/stores/user'
+import phoneApi from '@/api/modules/phone'
 
 const route = useRoute()
 const router = useRouter()
@@ -244,6 +306,9 @@ const loadingRelated = ref(false)
 
 // 收藏状态
 const isFavorite = ref(false)
+
+// 用户商店
+const userStore = useUserStore()
 
 // 手机图片
 const phoneImages = computed(() => {
@@ -331,52 +396,251 @@ const fetchRelatedPhones = async () => {
 }
 
 // 检查收藏状态
-const checkFavoriteStatus = () => {
-  // 模拟从localStorage获取收藏状态
-  const favoritePhones = JSON.parse(localStorage.getItem('favoritePhones') || '[]')
-  isFavorite.value = favoritePhones.includes(Number(phoneId))
-}
-
-// 添加到收藏
-const addToFavorites = () => {
-  // 获取当前用户
-  const userStr = localStorage.getItem('user')
-  if (!userStr) {
-    ElMessage.warning('请先登录后再收藏')
-    router.push('/login')
+const checkFavoriteStatus = async () => {
+  if (!userStore.isLoggedIn) {
+    isFavorite.value = false
     return
   }
   
-  // 从localStorage获取收藏列表
-  const favoritePhones = JSON.parse(localStorage.getItem('favoritePhones') || '[]')
-  
-  if (isFavorite.value) {
-    // 取消收藏
-    const index = favoritePhones.indexOf(Number(phoneId))
-    if (index > -1) {
-      favoritePhones.splice(index, 1)
-      localStorage.setItem('favoritePhones', JSON.stringify(favoritePhones))
+  try {
+    const response = await phoneApi.getFavoritePhones()
+    if (response && response.code === 200 && response.data) {
+      // 检查当前手机是否在收藏列表中
+      const favoriteIds = response.data.map(phone => phone.id)
+      isFavorite.value = favoriteIds.includes(Number(phoneId))
+      
+      // 更新本地存储
+      localStorage.setItem('favoritePhones', JSON.stringify(favoriteIds))
+    } else {
       isFavorite.value = false
-      ElMessage.success('已取消收藏')
     }
-  } else {
-    // 添加收藏
-    favoritePhones.push(Number(phoneId))
-    localStorage.setItem('favoritePhones', JSON.stringify(favoritePhones))
-    isFavorite.value = true
-    ElMessage.success('收藏成功')
+  } catch (error) {
+    console.error('Failed to check favorite status:', error)
+    // 如果API调用失败，尝试从本地存储中获取
+    const favoritePhones = JSON.parse(localStorage.getItem('favoritePhones') || '[]')
+    isFavorite.value = favoritePhones.includes(Number(phoneId))
   }
 }
 
-// 跳转到发布评测页面
-const goToPost = () => {
-  router.push({
-    path: '/post',
-    query: {
-      brandId: phone.value.brandId,
-      phoneModelId: phoneId
+// 切换收藏状态
+const togglePhoneFavorite = async () => {
+  if (!userStore.isLoggedIn) {
+    ElMessageBox.confirm('请先登录后再收藏', '提示', {
+      confirmButtonText: '去登录',
+      cancelButtonText: '取消',
+      type: 'info'
+    }).then(() => {
+      router.push('/login')
+    }).catch(() => {})
+    return
+  }
+  
+  try {
+    const action = isFavorite.value ? 'remove' : 'add'
+    const response = await phoneApi.toggleFavoritePhone(phoneId, action)
+    
+    if (response && response.code === 200) {
+      isFavorite.value = !isFavorite.value
+      
+      // 更新localStorage
+      const favoritePhones = JSON.parse(localStorage.getItem('favoritePhones') || '[]')
+      if (isFavorite.value) {
+        if (!favoritePhones.includes(Number(phoneId))) {
+          favoritePhones.push(Number(phoneId))
+        }
+      } else {
+        const index = favoritePhones.indexOf(Number(phoneId))
+        if (index !== -1) {
+          favoritePhones.splice(index, 1)
+        }
+      }
+      localStorage.setItem('favoritePhones', JSON.stringify(favoritePhones))
+      
+      ElMessage.success(isFavorite.value ? '已添加到收藏' : '已取消收藏')
+    } else {
+      ElMessage.error('操作失败，请稍后再试')
     }
-  })
+  } catch (error) {
+    console.error('Toggle favorite failed:', error)
+    ElMessage.error('操作失败，请稍后再试')
+  }
+}
+
+// 点赞交互
+const toggleLike = async (review) => {
+  if (!userStore.isLoggedIn) {
+    ElMessageBox.confirm(
+      '请先登录后再进行操作',
+      '提示',
+      {
+        confirmButtonText: '去登录',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    ).then(() => {
+      router.push('/login')
+    }).catch(() => {})
+    return
+  }
+  
+  try {
+    const action = review.isLiked ? 'unlike' : 'like'
+    const response = await instance.post(`/posts/${review.id}/${action}`)
+    
+    if (response && response.code === 200) {
+      review.isLiked = !review.isLiked
+      review.likeCount = review.isLiked ? (review.likeCount || 0) + 1 : (review.likeCount || 1) - 1
+      ElMessage.success(review.isLiked ? '点赞成功' : '已取消点赞')
+    } else {
+      ElMessage.error('操作失败，请稍后重试')
+    }
+  } catch (error) {
+    console.error('点赞操作失败:', error)
+    
+    // 备用方案：直接更新UI状态
+    review.isLiked = !review.isLiked
+    review.likeCount = review.isLiked ? (review.likeCount || 0) + 1 : (review.likeCount || 1) - 1
+    ElMessage.success(review.isLiked ? '点赞成功' : '已取消点赞')
+  }
+}
+
+// 收藏评测
+const toggleFavorite = async (review) => {
+  if (!userStore.isLoggedIn) {
+    ElMessageBox.confirm(
+      '请先登录后再进行操作',
+      '提示',
+      {
+        confirmButtonText: '去登录',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    ).then(() => {
+      router.push('/login')
+    }).catch(() => {})
+    return
+  }
+  
+  try {
+    const action = review.isFavorited ? 'unfavorite' : 'favorite'
+    const response = await instance.post(`/posts/${review.id}/${action}`)
+    
+    if (response && response.code === 200) {
+      review.isFavorited = !review.isFavorited
+      review.favoriteCount = review.isFavorited ? (review.favoriteCount || 0) + 1 : (review.favoriteCount || 1) - 1
+      ElMessage.success(review.isFavorited ? '收藏成功' : '已取消收藏')
+    } else {
+      ElMessage.error('操作失败，请稍后重试')
+    }
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+    
+    // 备用方案：直接更新UI状态
+    review.isFavorited = !review.isFavorited
+    review.favoriteCount = review.isFavorited ? (review.favoriteCount || 0) + 1 : (review.favoriteCount || 1) - 1
+    ElMessage.success(review.isFavorited ? '收藏成功' : '已取消收藏')
+  }
+}
+
+// 查看大图
+const viewImage = (imageUrl) => {
+  // 实现图片预览功能
+  if (window.viewerApi) {
+    // 如果集成了图片预览组件
+    window.viewerApi.view(imageUrl)
+  } else {
+    // 简单实现：在新窗口打开
+    window.open(imageUrl, '_blank')
+  }
+}
+
+// 跳转到用户主页
+const navigateToUserProfile = (userId) => {
+  if (!userId) return
+  router.push(`/user-profile/${userId}`)
+}
+
+// 添加查看所有评测的函数
+const viewAllReviews = () => {
+  // 获取tabs实例并激活评测选项卡
+  const tabs = document.querySelector('.phone-tabs .el-tabs__nav')
+  if (tabs) {
+    const reviewsTab = tabs.querySelectorAll('.el-tabs__item')[1] // 第二个选项卡是评测
+    if (reviewsTab) {
+      reviewsTab.click()
+      
+      // 滚动到评测区域
+      setTimeout(() => {
+        const reviewsSection = document.querySelector('.phone-reviews')
+        if (reviewsSection) {
+          reviewsSection.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100)
+    }
+  }
+}
+
+// 去发布评测
+const goToPost = () => {
+  if (!userStore.isLoggedIn) {
+    ElMessageBox.confirm(
+      '请先登录后再发布评测',
+      '提示',
+      {
+        confirmButtonText: '去登录',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    ).then(() => {
+      router.push('/login')
+    }).catch(() => {})
+    return
+  }
+  
+  // 如果用户喜欢这款手机，提示是否要收藏
+  if (!isFavorite.value) {
+    ElMessageBox.confirm(
+      '看起来您还没有收藏这款手机，是否要先收藏再发布评测？',
+      '提示',
+      {
+        confirmButtonText: '先收藏',
+        cancelButtonText: '暂不收藏',
+        type: 'info'
+      }
+    ).then(() => {
+      togglePhoneFavorite().then(() => {
+        router.push({
+          path: '/post',
+          query: {
+            phoneId: phoneId,
+            phoneName: phone.value?.name,
+            brandId: phone.value?.brandId,
+            brandName: phone.value?.brand?.name
+          }
+        })
+      })
+    }).catch(() => {
+      router.push({
+        path: '/post',
+        query: {
+          phoneId: phoneId,
+          phoneName: phone.value?.name,
+          brandId: phone.value?.brandId,
+          brandName: phone.value?.brand?.name
+        }
+      })
+    })
+  } else {
+    router.push({
+      path: '/post',
+      query: {
+        phoneId: phoneId,
+        phoneName: phone.value?.name,
+        brandId: phone.value?.brandId,
+        brandName: phone.value?.brand?.name
+      }
+    })
+  }
 }
 
 // 查看完整评测
@@ -413,47 +677,47 @@ const formatDate = (dateStr) => {
 }
 
 // 组件挂载时获取数据
-onMounted(() => {
-  if (phoneId) {
-    fetchPhoneDetail()
-  } else {
-    loading.value = false
-    ElMessage.error('参数错误')
-  }
+onMounted(async () => {
+  checkFavoriteStatus() // 检查收藏状态
+  await fetchPhoneDetail() // 获取手机详情
+  await fetchPhoneReviews() // 获取手机评测
+  await fetchRelatedPhones() // 获取相关手机
 })
 </script>
 
 <style scoped>
 .phone-detail-container {
-  padding: 20px 0;
+  padding: 20px;
 }
 
-.loading-container,
-.error-container {
-  min-height: 500px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-}
-
-/* 手机概览部分 */
-.phone-overview {
+.phone-info-section {
   display: flex;
   gap: 30px;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
 .phone-gallery {
   flex: 1;
-  max-width: 600px;
+  max-width: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .carousel-image {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  background-color: white;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f7fa;
 }
 
 .phone-info {
@@ -462,47 +726,137 @@ onMounted(() => {
   flex-direction: column;
 }
 
-.brand-tag {
-  display: inline-block;
-  background-color: #f0f0f0;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #666;
+.phone-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 10px;
+}
+
+.phone-brand-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.brand-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #606266;
+}
+
+.favorite-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 15px;
+  border-radius: 20px;
+  background-color: #f0f2f5;
+  cursor: pointer;
+  transition: all 0.3s;
+  user-select: none;
+}
+
+.favorite-btn:hover {
+  background-color: #e6eaf0;
+}
+
+.favorite-btn span {
+  font-size: 14px;
+}
+
+.favorite-btn.favorited {
+  background-color: #fff8e6;
+  color: #ff9900;
+}
+
+.favorite-btn.favorited:hover {
+  background-color: #fff0d1;
 }
 
 .phone-name {
   font-size: 28px;
-  margin: 0 0 15px 0;
-}
-
-.phone-price {
-  font-size: 24px;
-  color: #f56c6c;
-  font-weight: bold;
+  font-weight: 600;
+  color: #333;
   margin-bottom: 20px;
 }
 
-.phone-meta {
-  margin-bottom: 30px;
+.phone-rating-card {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
 }
 
-.meta-item {
-  margin-bottom: 10px;
+.phone-rating-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  margin-bottom: 10px;
 }
 
-.meta-label {
-  width: 100px;
-  color: #666;
+.rating-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
 }
 
-.phone-actions {
+.rating-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #FF9900;
+}
+
+.rating-stars {
+  margin-bottom: 10px;
+}
+
+.rating-stats {
+  display: flex;
+  justify-content: space-between;
+  color: #909399;
+  font-size: 13px;
+}
+
+.phone-specs {
+  margin-bottom: 20px;
+}
+
+.spec-item {
+  margin-bottom: 15px;
+}
+
+.spec-label {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 5px;
+}
+
+.spec-value {
+  font-size: 16px;
+  color: #333;
+}
+
+.price-value {
+  font-size: 22px;
+  color: #f56c6c;
+  font-weight: 500;
+}
+
+.description-value {
+  line-height: 1.6;
+}
+
+.action-buttons {
   display: flex;
   gap: 15px;
-  margin-top: auto;
+  margin-top: 20px;
 }
 
 /* 手机详情选项卡 */
@@ -539,45 +893,19 @@ onMounted(() => {
   margin-top: 20px;
 }
 
-.spec-item {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 15px;
-}
-
-.spec-label {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.spec-value {
-  font-weight: 500;
-}
-
-/* 评测部分 */
-.reviews-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.reviews-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
 .review-card {
-  border: 1px solid #eee;
+  background: #fff;
   border-radius: 8px;
-  padding: 20px;
-  transition: box-shadow 0.3s;
+  border: 1px solid #e8e8e8;
+  margin-bottom: 20px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .review-card:hover {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .review-header {
@@ -590,38 +918,57 @@ onMounted(() => {
 .review-user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
 }
 
 .review-user-meta {
-  display: flex;
-  flex-direction: column;
+  margin-left: 10px;
 }
 
 .review-username {
   font-weight: 500;
+  font-size: 15px;
+  margin-bottom: 3px;
+  cursor: pointer;
+}
+
+.clickable-avatar {
+  cursor: pointer;
+}
+
+.clickable-username:hover {
+  color: #409EFF;
+  text-decoration: underline;
 }
 
 .review-date {
   font-size: 12px;
-  color: #999;
+  color: #909399;
 }
 
 .review-rating {
   display: flex;
   align-items: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 6px 10px;
 }
 
-.rating-text {
-  margin-left: 8px;
+.rating-value {
+  font-size: 20px;
   font-weight: bold;
-  color: #ff9900;
+  color: #FF9900;
+  margin-right: 8px;
 }
 
 .review-title {
   font-size: 18px;
   font-weight: 500;
   margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.review-title:hover {
+  color: #409EFF;
 }
 
 .review-content {
@@ -633,40 +980,59 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.6;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.review-content:hover {
+  background-color: #f5f7fa;
+  text-decoration: underline;
+  color: #409EFF;
 }
 
 .review-images {
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
-  position: relative;
+  flex-wrap: wrap;
 }
 
-.review-image {
-  width: 100px;
-  height: 100px;
-  border-radius: 4px;
-  object-fit: cover;
+.preview-image {
+  width: 120px;
+  height: 120px;
+  background-color: #eee;
+  border-radius: 5px;
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.2s;
 }
 
-.more-images {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+.preview-image:hover {
+  transform: scale(1.03);
 }
 
-.review-footer {
+.card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.review-stats {
+.phone-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.phone-tag {
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: #666;
+}
+
+.interaction-stats {
   display: flex;
   gap: 15px;
 }
@@ -675,7 +1041,24 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #666;
+  margin-right: 10px;
+}
+
+/* 修改点赞按钮样式 */
+.el-button.is-danger {
+  background-color: rgba(245, 108, 108, 0.1) !important;
+  border-color: #ff6b6b !important;
+}
+
+/* 修改收藏按钮样式 */
+.el-button.is-warning {
+  background-color: rgba(230, 162, 60, 0.1) !important;
+  border-color: #e6a23c !important;
+}
+
+/* 移除旧的图标样式 */
+.like-icon {
+  display: none;
 }
 
 .pagination-container {
@@ -730,34 +1113,19 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .phone-overview {
+  .phone-info-section {
     flex-direction: column;
   }
   
   .phone-gallery {
     max-width: 100%;
   }
-  
-  .phone-info {
-    padding: 0 15px;
-  }
-  
-  .specs-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .review-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  .review-images {
-    flex-wrap: wrap;
-  }
-  
-  .related-phones-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+}
+
+.reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 </style> 

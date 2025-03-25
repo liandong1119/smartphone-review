@@ -75,27 +75,16 @@
 
           <div class="form-row">
             <el-form-item label="综合评分" prop="rating">
-              <el-rate
-                v-model="postForm.rating"
-                :colors="colors"
-                :texts="texts"
-                show-text
-                :max="5"
-              />
-            </el-form-item>
-
-            <el-form-item label="购买价格" prop="purchasePrice">
-              <el-input-number
-                v-model="postForm.purchasePrice"
-                :min="0"
-                :max="100000"
-                :precision="0"
-                :step="100"
-                :controls="false"
-                placeholder="购买价格"
-              >
-                <template #prefix>¥</template>
-              </el-input-number>
+              <div class="auto-rating-container">
+                <el-rate
+                  v-model="calculatedRating"
+                  disabled
+                  show-score
+                  text-color="#ff9900"
+                  score-template="{value} 分"
+                />
+                <div class="auto-rating-note">（评分由下方详细评分自动计算得出）</div>
+              </div>
             </el-form-item>
           </div>
         </el-card>
@@ -185,7 +174,6 @@ const postForm = ref({
   brandId: '',
   phoneModelId: '',
   rating: 0,
-  purchasePrice: '',
   content: '',
   images: [],
   appearanceRating: 0,
@@ -321,6 +309,49 @@ const handleRemove = (file) => {
   postForm.value.images = fileList.value.map(file => file.url)
 }
 
+// 自动计算综合评分
+const calculatedRating = computed(() => {
+  const {
+    appearanceRating,
+    screenRating,
+    performanceRating,
+    cameraRating,
+    batteryRating,
+    systemRating
+  } = postForm.value;
+  
+  // 计算有效评分项的数量
+  const validRatings = [
+    appearanceRating,
+    screenRating,
+    performanceRating,
+    cameraRating,
+    batteryRating,
+    systemRating
+  ].filter(rating => rating > 0).length;
+  
+  // 计算总评分
+  const totalRating = (
+    appearanceRating +
+    screenRating +
+    performanceRating +
+    cameraRating +
+    batteryRating +
+    systemRating
+  );
+  
+  // 如果没有有效评分，返回0
+  if (validRatings === 0) return 0;
+  
+  // 计算平均分，保留一位小数
+  const avgRating = parseFloat((totalRating / validRatings).toFixed(1));
+  
+  // 自动更新表单中的rating字段
+  postForm.value.rating = avgRating;
+  
+  return avgRating;
+});
+
 // 提交评测
 const submitReview = () => {
   postFormRef.value.validate(async (valid) => {
@@ -371,7 +402,6 @@ const resetForm = () => {
     brandId: '',
     phoneModelId: '',
     rating: 0,
-    purchasePrice: '',
     content: '',
     images: [],
     appearanceRating: 0,
@@ -532,5 +562,16 @@ onMounted(() => {
   .ratings-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.auto-rating-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.auto-rating-note {
+  font-size: 12px;
+  color: #909399;
 }
 </style> 
