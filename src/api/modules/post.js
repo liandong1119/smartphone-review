@@ -7,6 +7,11 @@ const postApi = {
     return instance.get('/posts', { params });
   },
   
+  // 获取推荐评测
+  getRecommendPosts(params) {
+    return instance.get('/posts/recommend', { params });
+  },
+  
   // 获取评测详情
   getPostDetail(id) {
     return instance.get(`/posts/${id}`);

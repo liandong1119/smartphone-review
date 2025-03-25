@@ -17,6 +17,9 @@ const PhoneSearch = () => import('../views/user/PhoneSearch.vue')
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
 const ForgotPassword = () => import('../views/ForgotPassword.vue')
+const LatestReviews = () => import('../views/user/LatestReviews.vue')
+const HotReviews = () => import('../views/user/HotReviews.vue')
+const RecommendReviews = () => import('../views/user/RecommendReviews.vue')
 
 // 管理端组件
 const AdminLayout = () => import('../views/admin/AdminLayout.vue')
@@ -118,6 +121,24 @@ const router = createRouter({
           name: 'announcementCenter',
           component: AnnouncementCenter,
           meta: { title: '公告中心' }
+        },
+        {
+          path: 'latest',
+          name: 'latestReviews',
+          component: LatestReviews,
+          meta: { title: '最新评测' }
+        },
+        {
+          path: 'hot',
+          name: 'hotReviews',
+          component: HotReviews,
+          meta: { title: '热门评测' }
+        },
+        {
+          path: 'recommend',
+          name: 'recommendReviews',
+          component: RecommendReviews,
+          meta: { title: '推荐评测' }
         }
       ]
     },

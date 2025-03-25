@@ -69,6 +69,10 @@
             <el-icon><Histogram /></el-icon>
             <span>热门评测</span>
           </el-menu-item>
+          <el-menu-item index="/recommend">
+            <el-icon><Star /></el-icon>
+            <span>推荐评测</span>
+          </el-menu-item>
           <el-menu-item index="/brands">
             <el-icon><Cellphone /></el-icon>
             <span>品牌浏览</span>
@@ -175,7 +179,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowDown, User, EditPen, SwitchButton, Search, HomeFilled, Clock, Histogram, Cellphone, Plus } from '@element-plus/icons-vue'
+import { ArrowDown, User, EditPen, SwitchButton, Search, HomeFilled, Clock, Histogram, Cellphone, Plus, Star } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import NotificationCenter from '@/components/NotificationCenter.vue'
 import { useUserStore } from '@/stores/user'

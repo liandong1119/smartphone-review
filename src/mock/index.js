@@ -5002,6 +5002,59 @@ export function createMockServer() {
               message: '删除通知成功'
             };
           });
+
+          // 获取推荐评测
+          this.get('/posts/recommend', (schema, request) => {
+            const { page = 1, limit = 10 } = request.queryParams;
+            
+            // 获取所有帖子
+            let allPosts = schema.db.posts.where({});
+            
+            // 关联用户、品牌和手机信息
+            const postsWithDetails = allPosts.map(post => {
+              const user = schema.db.users.find(post.userId);
+              const phoneModel = schema.db.phoneModels.find(post.modelId);
+              const brand = phoneModel ? schema.db.brands.find(phoneModel.brandId) : null;
+              
+              // 计算一个推荐评分，基于浏览量、点赞数和评论数
+              const score = (post.views || 0) * 0.5 + (post.likes || 0) * 2 + (post.comments || 0) * 3;
+              
+              return {
+                ...post,
+                username: user ? user.username : '未知用户',
+                userAvatar: user ? user.avatar : 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+                user: user ? {
+                  id: user.id, 
+                  username: user.username,
+                  avatar: user.avatar
+                } : null,
+                brand: brand ? brand.name : '',
+                phoneModel: phoneModel ? phoneModel.name : '',
+                recommendScore: score
+              };
+            });
+            
+            // 根据推荐评分排序
+            postsWithDetails.sort((a, b) => b.recommendScore - a.recommendScore);
+            
+            // 分页处理
+            const pageInt = parseInt(page);
+            const limitInt = parseInt(limit);
+            const start = (pageInt - 1) * limitInt;
+            const end = start + limitInt;
+            const paginatedPosts = postsWithDetails.slice(start, end);
+            
+            return {
+              code: 200,
+              message: '获取推荐评测成功',
+              data: {
+                records: paginatedPosts,
+                total: postsWithDetails.length,
+                page: pageInt,
+                limit: limitInt
+              }
+            };
+          });
         } catch (error) {
           console.error('配置API路由时出错:', error);
           return null;
