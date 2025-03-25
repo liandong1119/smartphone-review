@@ -48,7 +48,7 @@
             还没有账号? <el-link type="primary" @click="$router.push('/register')">立即注册</el-link>
           </div>
         </el-form>
-        <div class="login-divider">
+        <!-- <div class="login-divider">
           <span>其他登录方式</span>
         </div>
         <div class="social-login">
@@ -61,7 +61,7 @@
           <el-button circle>
             <el-icon><Iphone /></el-icon>
           </el-button>
-        </div>
+        </div> -->
       </div>
     </div>
     <div class="login-footer">

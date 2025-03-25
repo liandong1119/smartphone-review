@@ -11,8 +11,8 @@ import { initAppState, setupRefreshStateHandling } from './utils/init'
 import App from './App.vue'
 import router from './router'
 
-// 开发环境下启用模拟数据服务
-if (import.meta.env.DEV) {
+// 根据环境变量判断是否启用模拟数据服务
+if (import.meta.env.VITE_USE_MOCK) {
   try {
     console.log('正在初始化模拟数据服务...');
     const server = createMockServer();

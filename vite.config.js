@@ -18,4 +18,10 @@ export default defineConfig({
   server: {
     allowedHosts: ['.ngrok-free.app']
   },
+  build: {
+   // 确保在生产构建中不会移除 mock 相关代码
+   commonjsOptions: {
+    include: [/node_modules/]
+  }
+  }
 })
