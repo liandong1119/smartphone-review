@@ -16,6 +16,11 @@ export const initUserState = async () => {
   // 如果已登录，获取用户统计数据
   if (userStore.isLoggedIn) {
     await userStore.fetchUserStats()
+    
+    // 确保userId存在于localStorage中
+    if (userStore.userInfo && userStore.userInfo.id && !localStorage.getItem('userId')) {
+      localStorage.setItem('userId', userStore.userInfo.id)
+    }
   }
   
   return userStore

@@ -7,6 +7,7 @@ import uploadApi from './modules/upload';
 import announcementApi from './modules/announcement';
 import searchApi from './modules/search';
 import notificationApi from './modules/notification';
+import adminApi from './modules/admin';
 
 // 导出各个模块的API
 export { 
@@ -17,7 +18,8 @@ export {
   uploadApi, 
   announcementApi, 
   searchApi,
-  notificationApi 
+  notificationApi,
+  adminApi
 };
 
 // 导出默认API对象
@@ -29,5 +31,6 @@ export default {
   upload: uploadApi,
   announcement: announcementApi,
   search: searchApi,
-  notification: notificationApi
+  notification: notificationApi,
+  admin: adminApi
 }; 

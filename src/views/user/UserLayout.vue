@@ -73,10 +73,10 @@
             <el-icon><Cellphone /></el-icon>
             <span>品牌浏览</span>
           </el-menu-item>
-          <el-menu-item index="/phones">
+          <!-- <el-menu-item index="/phones">
             <el-icon><Search /></el-icon>
             <span>手机搜索</span>
-          </el-menu-item>
+          </el-menu-item> -->
         </el-menu>
       </div>
 

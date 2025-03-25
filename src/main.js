@@ -13,7 +13,18 @@ import router from './router'
 
 // 开发环境下启用模拟数据服务
 if (import.meta.env.DEV) {
-  createMockServer()
+  try {
+    console.log('正在初始化模拟数据服务...');
+    const server = createMockServer();
+    if (server) {
+      console.log('模拟数据服务初始化成功');
+    } else {
+      console.warn('模拟数据服务初始化结果无效');
+    }
+  } catch (error) {
+    console.error('初始化模拟数据服务失败:', error);
+    // 继续加载应用，但没有模拟数据
+  }
 }
 
 const app = createApp(App)

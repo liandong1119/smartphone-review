@@ -132,13 +132,6 @@
             <el-option label="低" value="low" />
           </el-select>
         </el-form-item>
-        <el-form-item label="显示位置" prop="position">
-          <el-checkbox-group v-model="announcementForm.position">
-            <el-checkbox label="home" border>首页</el-checkbox>
-            <el-checkbox label="forum" border>论坛页</el-checkbox>
-            <el-checkbox label="post" border>文章详情页</el-checkbox>
-          </el-checkbox-group>
-        </el-form-item>
         <el-form-item label="发布类型" prop="publishType">
           <el-radio-group v-model="announcementForm.publishType">
             <el-radio label="now">立即发布</el-radio>
@@ -205,49 +198,16 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
+import adminApi from '@/api/modules/admin'
 
-// 模拟公告数据
-const announcementList = ref([
-  {
-    id: 1,
-    title: '系统维护通知',
-    content: '<p>尊敬的用户，系统将于<strong>2023年6月15日</strong>凌晨2:00-4:00进行维护升级，期间网站将暂停访问，给您带来不便，敬请谅解。</p>',
-    createTime: '2023-06-10 15:30:45',
-    publishTime: '2023-06-10 16:00:00',
-    status: 'published',
-    priority: 'high',
-    position: ['home', 'forum', 'post'],
-    expireTime: '2023-06-16 00:00:00'
-  },
-  {
-    id: 2,
-    title: '新版本功能上线公告',
-    content: '<p>我们很高兴地宣布，新版本V2.0已经上线，<em>主要更新了以下功能</em>：</p><ul><li>全新的界面设计</li><li>评论点赞功能</li><li>用户关注系统</li></ul>',
-    createTime: '2023-06-12 09:15:22',
-    publishTime: null,
-    status: 'draft',
-    priority: 'medium',
-    position: ['home', 'forum'],
-    expireTime: null
-  },
-  {
-    id: 3,
-    title: '社区行为规范更新',
-    content: '<p>为了维护良好的社区氛围，我们更新了<a href="#/rules">社区行为规范</a>，请各位用户遵守，共同营造健康的讨论环境。</p>',
-    createTime: '2023-06-05 22:45:10',
-    publishTime: '2023-06-06 08:00:00',
-    status: 'published',
-    priority: 'low',
-    position: ['forum'],
-    expireTime: '2023-12-31 23:59:59'
-  }
-])
+// 公告数据列表
+const announcementList = ref([])
 
 // 表格相关状态
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(100)
+const total = ref(0)
 const searchKeyword = ref('')
 
 // 对话框相关状态
@@ -260,7 +220,6 @@ const announcementForm = reactive({
   title: '',
   content: '',
   priority: 'medium',
-  position: ['home'],
   publishType: 'draft',
   scheduledTime: '',
   expireTime: '',
@@ -278,9 +237,6 @@ const announcementFormRules = {
   ],
   priority: [
     { required: true, message: '请选择优先级', trigger: 'change' }
-  ],
-  position: [
-    { required: true, message: '请选择至少一个显示位置', trigger: 'change' }
   ],
   publishType: [
     { required: true, message: '请选择发布类型', trigger: 'change' }
@@ -310,19 +266,16 @@ onMounted(() => {
 const fetchAnnouncements = async () => {
   loading.value = true
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const response = await adminApi.getAnnouncementList({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: searchKeyword.value
+    })
     
-    // 实际项目中应从API获取数据
-    // const response = await announcementService.getAnnouncements({
-    //   page: currentPage.value,
-    //   pageSize: pageSize.value,
-    //   keyword: searchKeyword.value
-    // })
-    // announcementList.value = response.records
-    // total.value = response.total
-    
-    // 这里简单展示模拟数据
+    if (response) {
+      announcementList.value = response.records || []
+      total.value = response.total || 0
+    }
   } catch (error) {
     console.error('获取公告列表失败:', error)
     ElMessage.error('获取公告列表失败')
@@ -367,7 +320,6 @@ const handleAddAnnouncement = () => {
     title: '',
     content: '',
     priority: 'medium',
-    position: ['home'],
     publishType: 'draft',
     scheduledTime: '',
     expireTime: '',
@@ -385,7 +337,6 @@ const handleEdit = (row) => {
     title: row.title,
     content: row.content,
     priority: row.priority,
-    position: row.position,
     publishType: row.status === 'published' ? 'now' : row.status === 'scheduled' ? 'later' : 'draft',
     scheduledTime: row.publishTime,
     expireTime: row.expireTime,
@@ -406,20 +357,22 @@ const handlePublish = (row) => {
     }
   ).then(async () => {
     try {
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 300))
+      const response = await adminApi.updateAnnouncement(row.id, {
+        ...row,
+        status: 'published',
+        publishTime: new Date().toISOString().slice(0, 19).replace('T', ' ')
+      })
       
-      // 实际项目中应调用API发布公告
-      // await announcementService.publishAnnouncement(row.id)
-      
-      // 更新本地状态
-      const index = announcementList.value.findIndex(item => item.id === row.id)
-      if (index !== -1) {
-        announcementList.value[index].status = 'published'
-        announcementList.value[index].publishTime = new Date().toISOString().slice(0, 19).replace('T', ' ')
+      if (response) {
+        // 更新本地状态
+        const index = announcementList.value.findIndex(item => item.id === row.id)
+        if (index !== -1) {
+          announcementList.value[index].status = 'published'
+          announcementList.value[index].publishTime = new Date().toISOString().slice(0, 19).replace('T', ' ')
+        }
+        
+        ElMessage.success('公告已发布')
       }
-      
-      ElMessage.success('公告已发布')
     } catch (error) {
       console.error('发布公告失败:', error)
       ElMessage.error('发布公告失败')
@@ -441,19 +394,20 @@ const handleUnpublish = (row) => {
     }
   ).then(async () => {
     try {
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 300))
+      const response = await adminApi.updateAnnouncement(row.id, {
+        ...row,
+        status: 'draft'
+      })
       
-      // 实际项目中应调用API下线公告
-      // await announcementService.unpublishAnnouncement(row.id)
-      
-      // 更新本地状态
-      const index = announcementList.value.findIndex(item => item.id === row.id)
-      if (index !== -1) {
-        announcementList.value[index].status = 'draft'
+      if (response) {
+        // 更新本地状态
+        const index = announcementList.value.findIndex(item => item.id === row.id)
+        if (index !== -1) {
+          announcementList.value[index].status = 'draft'
+        }
+        
+        ElMessage.success('公告已下线')
       }
-      
-      ElMessage.success('公告已下线')
     } catch (error) {
       console.error('下线公告失败:', error)
       ElMessage.error('下线公告失败')
@@ -475,16 +429,14 @@ const handleDelete = (row) => {
     }
   ).then(async () => {
     try {
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 300))
+      const response = await adminApi.deleteAnnouncement(row.id)
       
-      // 实际项目中应调用API删除公告
-      // await announcementService.deleteAnnouncement(row.id)
-      
-      // 更新本地状态
-      announcementList.value = announcementList.value.filter(item => item.id !== row.id)
-      
-      ElMessage.success('删除成功')
+      if (response) {
+        // 更新本地状态
+        announcementList.value = announcementList.value.filter(item => item.id !== row.id)
+        
+        ElMessage.success('删除成功')
+      }
     } catch (error) {
       console.error('删除公告失败:', error)
       ElMessage.error('删除公告失败')
@@ -512,9 +464,6 @@ const submitForm = () => {
 // 预览后确认提交
 const submitAfterPreview = async () => {
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
     // 构建保存数据
     const saveData = {
       ...announcementForm,
@@ -526,32 +475,19 @@ const submitAfterPreview = async () => {
                    announcementForm.scheduledTime : null
     }
     
-    // 实际项目中应调用API保存公告
-    // if (isEdit.value) {
-    //   await announcementService.updateAnnouncement(saveData)
-    // } else {
-    //   await announcementService.createAnnouncement(saveData)
-    // }
-    
-    // 模拟保存成功
+    let response;
     if (isEdit.value) {
-      const index = announcementList.value.findIndex(item => item.id === announcementForm.id)
-      if (index !== -1) {
-        announcementList.value[index] = { ...saveData }
-      }
+      response = await adminApi.updateAnnouncement(saveData.id, saveData)
     } else {
-      // 模拟生成ID
-      const newId = Math.max(...announcementList.value.map(item => item.id)) + 1
-      announcementList.value.unshift({
-        ...saveData,
-        id: newId,
-        createTime: new Date().toISOString().slice(0, 19).replace('T', ' ')
-      })
+      response = await adminApi.createAnnouncement(saveData)
     }
     
-    ElMessage.success(isEdit.value ? '编辑成功' : '添加成功')
-    dialogVisible.value = false
-    previewDialogVisible.value = false
+    if (response) {
+      ElMessage.success(isEdit.value ? '编辑成功' : '添加成功')
+      dialogVisible.value = false
+      previewDialogVisible.value = false
+      fetchAnnouncements() // 刷新列表
+    }
   } catch (error) {
     console.error('保存公告失败:', error)
     ElMessage.error('保存公告失败')

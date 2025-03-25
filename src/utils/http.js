@@ -83,6 +83,7 @@ instance.interceptors.response.use(
           ElMessage.error(res.message || '登录已过期，请重新登录');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          localStorage.removeItem('userId');
           setTimeout(() => {
             window.location.href = '/login';
           }, 1500);
@@ -119,6 +120,7 @@ instance.interceptors.response.use(
           ElMessage.error('登录已过期，请重新登录');
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          localStorage.removeItem('userId');
           setTimeout(() => {
             window.location.href = '/login';
           }, 1500);

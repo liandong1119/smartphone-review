@@ -64,6 +64,29 @@ const userApi = {
   // 获取用户的粉丝列表
   getUserFollowers(userId, params) {
     return instance.get(`/user/${userId}/followers`, { params });
+  },
+  
+  // 获取当前用户的评测列表
+  getUserReviews(params) {
+    const { page = 1, limit = 10 } = params || {};
+    return instance.get(`/user/posts?page=${page}&limit=${limit}`);
+  },
+  
+  // 获取当前用户的评论列表
+  getUserComments(params) {
+    const { page = 1, limit = 10 } = params || {};
+    return instance.get(`/user/comments?page=${page}&limit=${limit}`);
+  },
+  
+  // 获取当前用户的收藏列表
+  getUserFavorites(params) {
+    const { type = 'post' } = params || {};
+    return instance.get(`/user/favorites?type=${type}`);
+  },
+  
+  // 添加或移除收藏
+  toggleFavorite(data) {
+    return instance.post('/user/favorites', data);
   }
 };
 

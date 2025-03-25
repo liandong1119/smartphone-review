@@ -176,7 +176,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
-import instance from '@/utils/http'
+import adminApi from '@/api/modules/admin'
 
 // 用户数据列表
 const userList = ref([])
@@ -231,81 +231,18 @@ onMounted(() => {
 const fetchUsers = async () => {
   loading.value = true
   try {
-    // 从API获取用户数据
-    const response = await instance.get('/admin/users', {
-      params: {
-        page: currentPage.value,
-        pageSize: pageSize.value,
-        keyword: searchKeyword.value
-      }
+    const response = await adminApi.getUserList({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: searchKeyword.value
     })
-    
-    if (response && response.code === 200) {
-      userList.value = response.data.records || []
-      total.value = response.data.total || 0
-    } else {
-      // 如果API尚未实现，使用模拟数据
-      console.warn('API未提供数据，使用模拟数据')
-      
-      // 模拟数据
-      const mockUsers = [
-        {
-          id: 1,
-          username: 'admin',
-          email: 'admin@example.com',
-          avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-          role: 'admin',
-          status: 1,
-          createTime: '2023-05-01 10:00:00'
-        },
-        {
-          id: 2,
-          username: 'user',
-          email: 'user@example.com',
-          avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-          role: 'user',
-          status: 1,
-          createTime: '2023-05-05 14:30:00'
-        }
-      ]
-      
-      if (searchKeyword.value) {
-        userList.value = mockUsers.filter(user => 
-          user.username.includes(searchKeyword.value) || 
-          user.email.includes(searchKeyword.value)
-        )
-      } else {
-        userList.value = mockUsers
-      }
-      
-      total.value = userList.value.length
+    if (response) {
+      userList.value = response.records
+      total.value = response.total
     }
   } catch (error) {
     console.error('获取用户列表失败:', error)
     ElMessage.error('获取用户列表失败')
-    
-    // 出错时使用模拟数据
-    userList.value = [
-      {
-        id: 1,
-        username: 'admin',
-        email: 'admin@example.com',
-        avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-        role: 'admin',
-        status: 1,
-        createTime: '2023-05-01 10:00:00'
-      },
-      {
-        id: 2,
-        username: 'user',
-        email: 'user@example.com',
-        avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-        role: 'user',
-        status: 1,
-        createTime: '2023-05-05 14:30:00'
-      }
-    ]
-    total.value = userList.value.length
   } finally {
     loading.value = false
   }
@@ -333,19 +270,8 @@ const handleSizeChange = (size) => {
 // 处理状态变化
 const handleStatusChange = async (row, status) => {
   try {
-    // 调用API更新用户状态
-    const response = await instance.put(`/admin/users/${row.id}/status`, {
-      status: status
-    })
-    
-    if (response && response.code === 200) {
-      ElMessage.success(`已${status === 1 ? '启用' : '禁用'}用户: ${row.username}`)
-    } else {
-      // 如果API尚未实现，使用模拟行为
-      console.warn('API未实现，使用模拟行为')
-      
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 300))
+    const response = await adminApi.updateUserStatus(row.id, status)
+    if (response) {
       ElMessage.success(`已${status === 1 ? '启用' : '禁用'}用户: ${row.username}`)
     }
   } catch (error) {
@@ -390,39 +316,22 @@ const handleEdit = (row) => {
 }
 
 // 处理删除用户
-const handleDelete = (row) => {
-  ElMessageBox.confirm(
-    `确认删除用户 "${row.username}" 吗?`,
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该用户吗?', '提示', {
       type: 'warning'
+    })
+    const response = await adminApi.deleteUser(row.id)
+    if (response) {
+      ElMessage.success('删除成功')
+      fetchUsers()
     }
-  ).then(async () => {
-    try {
-      // 调用API删除用户
-      const response = await instance.delete(`/admin/users/${row.id}`)
-      
-      if (response && response.code === 200) {
-        ElMessage.success('删除成功')
-        fetchUsers() // 刷新列表
-      } else {
-        // 如果API尚未实现，使用模拟行为
-        console.warn('API未实现，使用模拟行为')
-        
-        // 模拟异步请求
-        await new Promise(resolve => setTimeout(resolve, 300))
-        ElMessage.success('删除成功')
-        fetchUsers() // 刷新列表
-      }
-    } catch (error) {
+  } catch (error) {
+    if (error !== 'cancel') {
       console.error('删除用户失败:', error)
       ElMessage.error('删除用户失败')
     }
-  }).catch(() => {
-    // 用户取消删除
-  })
+  }
 }
 
 // 处理头像变化
@@ -433,11 +342,7 @@ const handleAvatarChange = async (file) => {
     formData.append('file', file.raw)
     
     // 调用上传API
-    const response = await instance.post('/upload/avatar', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+    const response = await adminApi.uploadAvatar(formData)
     
     if (response && response.code === 200) {
       userForm.avatar = response.data.url
@@ -455,38 +360,27 @@ const handleAvatarChange = async (file) => {
 }
 
 // 提交表单
-const submitForm = () => {
-  userFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    
-    try {
-      let response
-      
-      if (isEdit.value) {
-        // 编辑用户
-        response = await instance.put(`/admin/users/${userForm.id}`, userForm)
-      } else {
-        // 创建用户
-        response = await instance.post('/admin/users', userForm)
+const submitForm = async () => {
+  if (!userFormRef.value) return
+  
+  await userFormRef.value.validate(async (valid) => {
+    if (valid) {
+      try {
+        let response
+        if (userForm.value.id) {
+          response = await adminApi.updateUser(userForm.value.id, userForm.value)
+        } else {
+          response = await adminApi.createUser(userForm.value)
+        }
+        if (response) {
+          ElMessage.success(userForm.value.id ? '更新成功' : '创建成功')
+          dialogVisible.value = false
+          fetchUsers()
+        }
+      } catch (error) {
+        console.error('提交表单失败:', error)
+        ElMessage.error('操作失败')
       }
-      
-      if (response && response.code === 200) {
-        ElMessage.success(isEdit.value ? '编辑成功' : '添加成功')
-        dialogVisible.value = false
-        fetchUsers() // 刷新列表
-      } else {
-        // 如果API尚未实现，使用模拟行为
-        console.warn('API未实现，使用模拟行为')
-        
-        // 模拟异步请求
-        await new Promise(resolve => setTimeout(resolve, 500))
-        ElMessage.success(isEdit.value ? '编辑成功' : '添加成功')
-        dialogVisible.value = false
-        fetchUsers() // 刷新列表
-      }
-    } catch (error) {
-      console.error('保存用户失败:', error)
-      ElMessage.error('保存用户失败')
     }
   })
 }
@@ -494,22 +388,11 @@ const submitForm = () => {
 // 处理禁言状态变化
 const handleMuteChange = async (row, isMuted) => {
   try {
-    // 调用API更新用户禁言状态
-    const response = await instance.put(`/admin/users/${row.id}/mute`, {
-      isMuted: isMuted
-    })
-    
-    if (response && response.code === 200) {
+    const response = await adminApi.updateUserMute(row.id, isMuted)
+    if (response) {
       ElMessage.success(`已${isMuted ? '禁言' : '解除禁言'}用户: ${row.username}`)
       row.isMuted = isMuted
-    } else {
-      // 如果API尚未实现，使用模拟行为
-      console.warn('API未实现，使用模拟行为')
-      
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 300))
-      ElMessage.success(`已${isMuted ? '禁言' : '解除禁言'}用户: ${row.username}`)
-      row.isMuted = isMuted
+      fetchUsers()
     }
   } catch (error) {
     console.error('更新用户禁言状态失败:', error)

@@ -45,6 +45,11 @@ export const useUserStore = defineStore('user', () => {
         localStorage.setItem('token', response.token)
         localStorage.setItem('user', JSON.stringify(response.user))
         
+        // 保存用户ID到本地存储，供API使用
+        if (response.user && response.user.id) {
+          localStorage.setItem('userId', response.user.id)
+        }
+        
         // 获取用户的统计数据
         fetchUserStats()
         
@@ -74,6 +79,11 @@ export const useUserStore = defineStore('user', () => {
         localStorage.setItem('token', response.token)
         localStorage.setItem('user', JSON.stringify(response.user))
         
+        // 保存用户ID到本地存储，供API使用
+        if (response.user && response.user.id) {
+          localStorage.setItem('userId', response.user.id)
+        }
+        
         ElMessage.success('注册成功')
         return true
       }
@@ -99,6 +109,7 @@ export const useUserStore = defineStore('user', () => {
     token.value = ''
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('userId')
   }
 
   // 获取用户统计数据

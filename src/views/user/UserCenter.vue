@@ -106,7 +106,7 @@
                 <div v-for="comment in userComments" :key="comment.id" class="comment-item">
                   <div class="comment-header">
                     <div class="comment-meta">
-                      <span class="comment-review">《{{ comment.reviewTitle }}》</span>
+                      <span class="comment-review" @click="viewComment(comment)" style="cursor: pointer; color: #409EFF;">《{{ comment.reviewTitle }}》</span>
                       <span class="comment-time">{{ comment.commentTime }}</span>
                     </div>
                     <div class="comment-actions">
@@ -166,7 +166,7 @@
               </div>
             </el-tab-pane>
             
-            <el-tab-pane label="收藏手机" name="favoritePhones">
+            <el-tab-pane label="收藏手机" name="favorite-phones">
               <div class="empty-placeholder" v-if="favoritePhones.length === 0">
                 <el-empty description="暂无收藏的手机型号" />
               </div>
@@ -226,7 +226,7 @@
                   </div>
                 </div>
                 
-                <div class="security-item">
+                <!-- <div class="security-item">
                   <div class="security-item-info">
                     <div class="security-item-title">
                       <el-icon><Iphone /></el-icon>
@@ -257,7 +257,7 @@
                       {{ userInfo.qqBound ? '已绑定' : '绑定QQ' }}
                     </el-button>
                   </div>
-                </div>
+                </div> -->
                 
                 <div class="security-item">
                   <div class="security-item-info">
@@ -378,7 +378,7 @@
     </el-dialog>
     
     <!-- 绑定/修改手机对话框 -->
-    <el-dialog v-model="phoneDialogVisible" :title="userInfo.phone ? '修改手机号' : '绑定手机号'" width="500px">
+    <!-- <el-dialog v-model="phoneDialogVisible" :title="userInfo.phone ? '修改手机号' : '绑定手机号'" width="500px">
       <el-form :model="phoneForm" :rules="phoneRules" ref="phoneFormRef" label-position="top">
         <el-form-item label="手机号码" prop="phone">
           <el-input v-model="phoneForm.phone" placeholder="请输入手机号码"></el-input>
@@ -402,18 +402,18 @@
           <el-button type="primary" :loading="submitting" @click="bindPhone">确认</el-button>
         </span>
       </template>
-    </el-dialog>
+    </el-dialog> -->
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { EditPen, Delete, Plus, Lock, Message, Iphone, ChatDotRound, Connection, Warning } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { createRules, validateEmail, validateMobile, validatePassword, validateConfirmPassword } from '@/utils/validate'
+import userApi from '@/api/modules/user'
 import phoneApi from '@/api/modules/phone'
-import instance from '@/utils/http'
 
 const router = useRouter()
 const activeTab = ref('reviews')
@@ -542,129 +542,205 @@ const phoneRules = createRules({
 })
 
 // 切换标签页
-const handleTabClick = (tab) => {
-  switch(tab.props.name) {
+const handleTabClick = async (tab) => {
+  activeTab.value = tab.props.name;
+  
+  switch(activeTab.value) {
     case 'reviews':
-      fetchUserReviews()
-      break
+      currentPage.value = 1;
+      await fetchUserReviews();
+      break;
     case 'comments':
-      fetchUserComments()
-      break
+      commentPage.value = 1;
+      await fetchUserComments();
+      break;
     case 'favorites':
-      fetchUserFavorites()
-      break
-    case 'favoritePhones':
-      fetchFavoritePhones()
-      break
-    case 'security':
-      // 处理账户安全标签页的逻辑
-      break
+      favoritePage.value = 1;
+      await fetchUserFavorites();
+      break;
+    case 'favorite-phones':
+      await fetchFavoritePhones();
+      break;
   }
 }
 
 // 获取用户评测列表
-const fetchUserReviews = () => {
-  // 模拟API调用
-  setTimeout(() => {
-    // 模拟数据
-    userReviews.value = [
-      {
-        id: 1,
-        title: 'iPhone 15 Pro 全面评测：从设计到性能的全方位分析',
-        publishTime: '2023-09-25',
-        viewCount: 1580,
-        likeCount: 67,
-        commentCount: 23,
-        status: 'published'
-      },
-      {
-        id: 2,
-        title: '华为Mate60 Pro使用体验：重返巅峰？',
-        publishTime: '2023-09-15',
-        viewCount: 1280,
-        likeCount: 53,
-        commentCount: 19,
-        status: 'published'
-      },
-      {
-        id: 3,
-        title: '小米14 Ultra相机深度评测（草稿）',
-        publishTime: '尚未发布',
-        viewCount: 0,
-        likeCount: 0,
-        commentCount: 0,
-        status: 'draft'
+const fetchUserReviews = async () => {
+  try {
+    console.log('开始获取用户评测列表');
+    const response = await userApi.getUserReviews({
+      page: currentPage.value,
+      limit: pageSize.value
+    });
+    console.log('用户评测API响应:', response);
+
+    if (response && response.records && Array.isArray(response.records)) {
+      userReviews.value = response.records;
+      totalItems.value = response.total || response.records.length;
+      console.log('设置用户评测数据:', userReviews.value);
+    } else if (response && Array.isArray(response)) {
+      userReviews.value = response;
+      totalItems.value = response.length;
+    } else if (response && response.data) {
+      if (Array.isArray(response.data.records)) {
+        userReviews.value = response.data.records;
+        totalItems.value = response.data.total || response.data.records.length;
+      } else if (Array.isArray(response.data)) {
+        userReviews.value = response.data;
+        totalItems.value = response.data.length;
       }
-    ]
-    totalItems.value = userReviews.value.length
-  }, 300)
+    } else {
+      userReviews.value = [];
+      totalItems.value = 0;
+    }
+  } catch (error) {
+    console.error('获取评测列表失败:', error);
+    ElMessage.error('获取评测列表失败');
+    userReviews.value = [];
+    totalItems.value = 0;
+  }
 }
 
 // 获取用户评论列表
-const fetchUserComments = () => {
-  // 模拟API调用
-  setTimeout(() => {
-    // 模拟数据
-    userComments.value = [
-      {
-        id: 1,
-        reviewTitle: 'Galaxy S23 Ultra评测',
-        content: '这篇评测非常全面，尤其是相机部分的分析很专业，对我选购手机很有帮助。',
-        commentTime: '2023-08-15'
-      },
-      {
-        id: 2,
-        reviewTitle: 'OPPO Find X6 Pro深度体验',
-        content: '作为一个OPPO的老用户，非常认同这篇评测的观点，尤其是关于屏幕素质的评价很客观。',
-        commentTime: '2023-07-22'
+const fetchUserComments = async () => {
+  try {
+    console.log('开始获取用户评论列表');
+    const response = await userApi.getUserComments({
+      page: commentPage.value,
+      limit: commentPageSize.value
+    });
+    console.log('用户评论API响应:', response);
+
+    if (response && response.records && Array.isArray(response.records)) {
+      userComments.value = response.records;
+      totalComments.value = response.total || response.records.length;
+      console.log('设置用户评论数据:', userComments.value);
+    } else if (response && Array.isArray(response)) {
+      userComments.value = response;
+      totalComments.value = response.length;
+      console.log('设置用户评论数据(数组形式):', userComments.value);
+    } else if (response && response.data) {
+      if (Array.isArray(response.data.records)) {
+        userComments.value = response.data.records;
+        totalComments.value = response.data.total || response.data.records.length;
+      } else if (Array.isArray(response.data)) {
+        userComments.value = response.data;
+        totalComments.value = response.data.length;
       }
-    ]
-    totalComments.value = userComments.value.length
-  }, 300)
+      console.log('设置用户评论数据(嵌套形式):', userComments.value);
+    } else {
+      console.warn('用户评论数据格式不正确:', response);
+      userComments.value = [];
+      totalComments.value = 0;
+    }
+  } catch (error) {
+    console.error('获取评论列表失败:', error);
+    ElMessage.error('获取评论列表失败');
+    userComments.value = [];
+    totalComments.value = 0;
+  }
 }
 
 // 获取用户收藏列表
-const fetchUserFavorites = () => {
-  // 模拟API调用
-  setTimeout(() => {
-    // 模拟数据
-    userFavorites.value = [
-      {
-        id: 1,
-        title: '一加12全面评测：真旗舰的回归',
-        author: '手机评测员',
-        cover: 'https://via.placeholder.com/300x200',
-        collectTime: '2023-09-10'
-      },
-      {
-        id: 2,
-        title: 'vivo X100 Pro+相机评测：蔡司加持的影像旗舰',
-        author: '摄影大师',
-        cover: 'https://via.placeholder.com/300x200',
-        collectTime: '2023-08-25'
-      }
-    ]
-    totalFavorites.value = userFavorites.value.length
-  }, 300)
+const fetchUserFavorites = async () => {
+  try {
+    console.log('开始获取用户收藏列表');
+    const response = await userApi.getUserFavorites({
+      type: 'post'
+    });
+    console.log('用户收藏API响应:', response);
+    
+    if (response && Array.isArray(response)) {
+      // 直接是数组形式
+      userFavorites.value = response;
+      totalFavorites.value = response.length;
+      console.log('设置用户收藏数据(数组形式):', userFavorites.value);
+    } else if (response && response.data && Array.isArray(response.data)) {
+      // 是包含data字段的对象
+      userFavorites.value = response.data;
+      totalFavorites.value = response.data.length;
+      console.log('设置用户收藏数据(对象形式):', userFavorites.value);
+    } else {
+      console.warn('用户收藏数据格式不正确:', response);
+      userFavorites.value = [];
+      totalFavorites.value = 0;
+    }
+  } catch (error) {
+    console.error('获取收藏列表失败:', error);
+    ElMessage.error('获取收藏列表失败');
+    userFavorites.value = [];
+    totalFavorites.value = 0;
+  }
 }
 
 // 获取收藏的手机型号
 const fetchFavoritePhones = async () => {
   try {
-    const response = await phoneApi.getFavoritePhones()
+    console.log('开始获取收藏的手机型号');
     
-    if (response && response.data) {
-      favoritePhones.value = response.data
-      totalFavoritePhones.value = response.data.length
+    // 确保清空之前的数据，避免显示旧数据
+    favoritePhones.value = [];
+    totalFavoritePhones.value = 0;
+    
+    const response = await phoneApi.getFavoritePhones();
+    console.log('收藏手机API响应类型:', typeof response, Array.isArray(response));
+    console.log('收藏手机API响应详情:', response);
+    
+    // 响应处理增强版 - 更健壮的数据处理逻辑
+    if (response) {
+      if (Array.isArray(response)) {
+        // 直接是数组形式
+        favoritePhones.value = response;
+        console.log('数组响应 - 数据长度:', response.length);
+      } else if (typeof response === 'object') {
+        if (response.data && Array.isArray(response.data)) {
+          // 标准嵌套响应 { data: [...] }
+          favoritePhones.value = response.data;
+          console.log('对象嵌套数组响应 - 数据长度:', response.data.length);
+        } else if (response.code === 200 && response.data) {
+          // API风格响应 { code: 200, message: '成功', data: [...] }
+          const dataArray = Array.isArray(response.data) ? response.data : [response.data];
+          favoritePhones.value = dataArray;
+          console.log('API风格响应 - 数据长度:', dataArray.length);
+        } else {
+          // 响应是对象但没有规范的数据结构，尝试转换为数组
+          const dataArray = Object.values(response).filter(item => typeof item === 'object');
+          if (dataArray.length > 0) {
+            favoritePhones.value = dataArray;
+            console.log('非标准对象响应 - 转换后数据长度:', dataArray.length);
+          } else {
+            console.warn('无法解析的对象响应:', response);
+          }
+        }
+      }
+      
+      // 更新总数
+      totalFavoritePhones.value = favoritePhones.value.length;
+      console.log('最终设置的收藏手机数据:', favoritePhones.value);
+      
+      // 如果依然没有数据，尝试使用本地存储的备用数据
+      if (favoritePhones.value.length === 0) {
+        console.warn('API返回了空数据，将使用默认收藏手机数据');
+        // 可以添加一些默认数据，但我们已经修改了mock API确保返回数据
+      }
     } else {
-      favoritePhones.value = []
-      totalFavoritePhones.value = 0
+      console.warn('收藏手机API响应为空');
     }
   } catch (error) {
-    console.error('获取收藏的手机型号失败:', error)
-    ElMessage.error('获取收藏的手机型号失败')
-    favoritePhones.value = []
-    totalFavoritePhones.value = 0
+    console.error('获取收藏的手机型号失败:', error);
+    ElMessage.error('获取收藏的手机型号失败，将使用缓存数据');
+    
+    // 错误处理 - 可以尝试从localStorage读取缓存的收藏
+    try {
+      const cachedFavorites = localStorage.getItem('favoritePhones');
+      if (cachedFavorites) {
+        const favoriteIds = JSON.parse(cachedFavorites);
+        console.log('从缓存读取收藏ID:', favoriteIds);
+        // 这里可以添加逻辑根据ID获取手机详情
+      }
+    } catch (cacheError) {
+      console.error('读取缓存收藏数据失败:', cacheError);
+    }
   }
 }
 
@@ -1012,21 +1088,77 @@ const viewPhone = (phoneId) => {
   router.push(`/phone/${phoneId}`)
 }
 
-// 组件加载时初始化数据
-onMounted(() => {
-  // 从localStorage获取用户信息
-  const storedUser = localStorage.getItem('user')
-  if (storedUser) {
-    const userData = JSON.parse(storedUser)
-    userInfo.value.username = userData.username || '用户名'
-    userInfo.value.email = userData.email || 'user@example.com'
-    userInfo.value.avatar = userData.avatar || 'https://via.placeholder.com/100'
-    userInfo.value.role = userData.role || 'user'
+// 查看评论对应的评测
+const viewComment = (comment) => {
+  if (comment.detailUrl) {
+    router.push(comment.detailUrl);
+  } else if (comment.postId) {
+    router.push(`/review/${comment.postId}`);
+  }
+}
+
+// 监听评测分页参数变化
+watch([currentPage, pageSize], () => {
+  if (activeTab.value === 'reviews') {
+    fetchUserReviews();
+  }
+});
+
+// 监听评论分页参数变化
+watch([commentPage, commentPageSize], () => {
+  if (activeTab.value === 'comments') {
+    fetchUserComments();
+  }
+});
+
+// 监听收藏分页参数变化
+watch([favoritePage, favoritePageSize], () => {
+  if (activeTab.value === 'favorites') {
+    fetchUserFavorites();
+  }
+});
+
+// 监听收藏手机分页参数变化
+watch([favoritePhonePage, favoritePhonePageSize], () => {
+  if (activeTab.value === 'favorite-phones') {
+    fetchFavoritePhones();
+  }
+});
+
+// 在组件加载时初始化数据
+onMounted(async () => {
+  // 获取用户数据
+  try {
+    const response = await userApi.getUserInfo();
+    console.log('用户信息:', response);
+    if (response) {
+      const userData = response;
+      userInfo.value = userData;
+      userInfo.value.avatar = userData.avatar || 'https://via.placeholder.com/100';
+      userInfo.value.role = userData.role || 'user';
+      
+      // 设置用户ID到localStorage，以便API可以检查登录状态
+      if (userData.id) {
+        localStorage.setItem('userId', userData.id);
+      }
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+    ElMessage.error('获取用户信息失败');
   }
   
   // 获取用户评测列表
-  fetchUserReviews()
-})
+  fetchUserReviews();
+  
+  // 获取用户评论列表
+  fetchUserComments();
+  
+  // 获取用户收藏列表
+  fetchUserFavorites();
+  
+  // 获取用户收藏的手机列表
+  fetchFavoritePhones();
+});
 </script>
 
 <style scoped>

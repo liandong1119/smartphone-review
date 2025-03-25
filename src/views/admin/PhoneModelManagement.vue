@@ -494,43 +494,13 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
+import adminApi from '@/api/modules/admin'
 
 // 标签页
 const activeTab = ref('brand')
 
 // 品牌表格相关
-const brandList = ref([
-  {
-    id: 1,
-    name: '小米',
-    nameEn: 'Xiaomi',
-    logo: 'https://www.mi.com/favicon.ico',
-    country: '中国',
-    createTime: '2023-01-10 10:00:00',
-    status: 1,
-    description: '小米公司正式成立于2010年4月，是一家专注于高端智能手机、互联网电视自主研发的创新型科技企业。'
-  },
-  {
-    id: 2,
-    name: '华为',
-    nameEn: 'Huawei',
-    logo: 'https://www.huawei.com/favicon.ico',
-    country: '中国',
-    createTime: '2023-01-12 15:30:00',
-    status: 1,
-    description: '华为创立于1987年，是全球领先的ICT（信息与通信）基础设施和智能终端提供商。'
-  },
-  {
-    id: 3,
-    name: '苹果',
-    nameEn: 'Apple',
-    logo: 'https://www.apple.com/favicon.ico',
-    country: '美国',
-    createTime: '2023-01-15 12:00:00',
-    status: 1,
-    description: '苹果公司由史蒂夫·乔布斯、斯蒂夫·沃兹尼亚克和罗恩·韦恩创立于1976年4月1日，总部位于美国加利福尼亚州。'
-  }
-])
+const brandList = ref([])
 
 // 品牌选项
 const brandOptions = computed(() => {
@@ -543,83 +513,16 @@ const brandOptions = computed(() => {
 const brandLoading = ref(false)
 const brandCurrentPage = ref(1)
 const brandPageSize = ref(10)
-const brandTotal = ref(50)
+const brandTotal = ref(0)
 const brandSearchKeyword = ref('')
 
 // 型号表格相关
-const modelList = ref([
-  {
-    id: 1,
-    name: '小米13 Ultra',
-    brandId: 1,
-    brand: {
-      id: 1,
-      name: '小米',
-      logo: 'https://www.mi.com/favicon.ico'
-    },
-    image: 'https://cdn.cnbj1.fds.api.mi-img.com/mi-mall/8932af4912f7f403299c516b06efeb35.png',
-    release: '2023-04-18',
-    price: 5999.00,
-    status: 1,
-    screenSize: '6.73英寸',
-    cpu: '骁龙8 Gen 2',
-    ram: '12GB/16GB',
-    storage: '256GB/512GB/1TB',
-    battery: '5000mAh',
-    camera: '5000万像素主摄 + 5000万像素超广角 + 5000万像素长焦',
-    os: 'Android 13, MIUI 14',
-    features: ['IP68防水', '无线充电', '徕卡镜头', '120Hz刷新率']
-  },
-  {
-    id: 2,
-    name: 'iPhone 14 Pro Max',
-    brandId: 3,
-    brand: {
-      id: 3,
-      name: '苹果',
-      logo: 'https://www.apple.com/favicon.ico'
-    },
-    image: 'https://store.storeimages.cdn-apple.com/8756/as-images.apple.com/is/iphone-14-pro-finish-select-202209-6-7inch-deeppurple?wid=2560&hei=1440&fmt=jpeg',
-    release: '2022-09-16',
-    price: 8999.00,
-    status: 1,
-    screenSize: '6.7英寸',
-    cpu: 'A16仿生芯片',
-    ram: '6GB',
-    storage: '128GB/256GB/512GB/1TB',
-    battery: '4323mAh',
-    camera: '4800万像素主摄 + 1200万像素超广角 + 1200万像素长焦',
-    os: 'iOS 16',
-    features: ['IP68防水', '无线充电', 'Face ID', '动态岛']
-  },
-  {
-    id: 3,
-    name: 'Mate 50 Pro',
-    brandId: 2,
-    brand: {
-      id: 2,
-      name: '华为',
-      logo: 'https://www.huawei.com/favicon.ico'
-    },
-    image: 'https://consumer.huawei.com/content/dam/huawei-cbg-site/cn/mkt/plp/new-phones/series-products/mate50-pro-white.png',
-    release: '2022-09-21',
-    price: 6799.00,
-    status: 1,
-    screenSize: '6.74英寸',
-    cpu: '骁龙8+ Gen 1 4G',
-    ram: '8GB',
-    storage: '256GB/512GB',
-    battery: '4700mAh',
-    camera: '5000万像素主摄 + 1300万像素超广角 + 6400万像素长焦',
-    os: 'HarmonyOS 3.0',
-    features: ['IP68防水', '卫星通信', '昆仑玻璃', '变光圈']
-  }
-])
+const modelList = ref([])
 
 const modelLoading = ref(false)
 const modelCurrentPage = ref(1)
 const modelPageSize = ref(10)
-const modelTotal = ref(30)
+const modelTotal = ref(0)
 const modelSearchKeyword = ref('')
 const modelFilterBrandId = ref('')
 
@@ -712,22 +615,32 @@ onMounted(() => {
 const fetchBrands = async () => {
   brandLoading.value = true
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const response = await adminApi.getBrandList()
     
-    // 实际项目中应从API获取数据
-    // const response = await brandService.getBrands({
-    //   page: brandCurrentPage.value,
-    //   pageSize: brandPageSize.value,
-    //   keyword: brandSearchKeyword.value
-    // })
-    // brandList.value = response.records
-    // brandTotal.value = response.total
-    
-    // 这里简单展示模拟数据
+    if (response && response.records) {
+      brandList.value = response.records.map(brand => ({
+        ...brand,
+        logo: brand.logo || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png', // 设置默认logo
+        status: brand.status !== undefined ? brand.status : 1  // 确保状态字段存在，默认启用
+      }))
+      brandTotal.value = response.total || 0
+    } else if (Array.isArray(response)) {
+      // 处理直接返回数组的情况
+      brandList.value = response.map(brand => ({
+        ...brand,
+        logo: brand.logo || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png', // 设置默认logo
+        status: brand.status !== undefined ? brand.status : 1  // 确保状态字段存在，默认启用
+      }))
+      brandTotal.value = response.length
+    } else {
+      brandList.value = []
+      brandTotal.value = 0
+    }
   } catch (error) {
     console.error('获取品牌列表失败:', error)
     ElMessage.error('获取品牌列表失败')
+    brandList.value = []
+    brandTotal.value = 0
   } finally {
     brandLoading.value = false
   }
@@ -737,26 +650,35 @@ const fetchBrands = async () => {
 const fetchModels = async () => {
   modelLoading.value = true
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const response = await adminApi.getPhoneModelList({
+      page: modelCurrentPage.value,
+      pageSize: modelPageSize.value,
+      keyword: modelSearchKeyword.value,
+      brandId: modelFilterBrandId.value
+    })
     
-    // 实际项目中应从API获取数据
-    // const response = await modelService.getModels({
-    //   page: modelCurrentPage.value,
-    //   pageSize: modelPageSize.value,
-    //   keyword: modelSearchKeyword.value,
-    //   brandId: modelFilterBrandId.value
-    // })
-    // modelList.value = response.records
-    // modelTotal.value = response.total
-    
-    // 这里简单展示模拟数据
-    if (modelFilterBrandId.value) {
-      modelList.value = modelList.value.filter(model => model.brandId === modelFilterBrandId.value)
+    if (response && response.records) {
+      // 确保每个型号都有品牌信息和状态字段
+      modelList.value = response.records.map(model => ({
+        ...model,
+        status: model.status !== undefined ? model.status : 1,  // 确保状态字段存在，默认启用
+        image: model.image || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png', // 设置默认图片
+        brand: model.brand || {
+          id: model.brandId,
+          name: model.brandName || '未知品牌',
+          logo: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+        }
+      }))
+      modelTotal.value = response.total || 0
+    } else {
+      modelList.value = []
+      modelTotal.value = 0
     }
   } catch (error) {
-    console.error('获取型号列表失败:', error)
-    ElMessage.error('获取型号列表失败')
+    console.error('获取手机型号列表失败:', error)
+    ElMessage.error('获取手机型号列表失败')
+    modelList.value = []
+    modelTotal.value = 0
   } finally {
     modelLoading.value = false
   }
@@ -785,13 +707,12 @@ const handleBrandCurrentChange = (page) => {
 // 品牌状态变更
 const handleBrandStatusChange = async (row, status) => {
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // 通过API更新品牌状态
+    const response = await adminApi.updateBrandStatus(row.id, status)
     
-    // 实际项目中应调用API更新状态
-    // await brandService.updateBrandStatus(row.id, status)
-    
-    ElMessage.success(`已${status === 1 ? '启用' : '禁用'}品牌: ${row.name}`)
+    if (response) {
+      ElMessage.success(`已${status === 1 ? '启用' : '禁用'}品牌: ${row.name}`)
+    }
   } catch (error) {
     console.error('更新品牌状态失败:', error)
     row.status = status === 1 ? 0 : 1 // 恢复状态
@@ -842,16 +763,13 @@ const handleDeleteBrand = (row) => {
     }
   ).then(async () => {
     try {
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // 通过API删除品牌
+      const response = await adminApi.deleteBrand(row.id)
       
-      // 实际项目中应调用API删除品牌
-      // await brandService.deleteBrand(row.id)
-      
-      // 更新本地状态
-      brandList.value = brandList.value.filter(item => item.id !== row.id)
-      
-      ElMessage.success('删除成功')
+      if (response) {
+        ElMessage.success('删除成功')
+        fetchBrands() // 刷新列表
+      }
     } catch (error) {
       console.error('删除品牌失败:', error)
       ElMessage.error('删除品牌失败')
@@ -864,7 +782,6 @@ const handleDeleteBrand = (row) => {
 // 品牌Logo变更
 const handleBrandLogoChange = (file) => {
   // 在实际应用中，应该上传图片到服务器并获取URL
-  // 这里简单处理为本地预览
   brandForm.logo = URL.createObjectURL(file.raw)
 }
 
@@ -874,34 +791,19 @@ const submitBrandForm = () => {
     if (!valid) return
     
     try {
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 500))
+      let response;
       
-      // 实际项目中应调用API保存品牌
-      // if (isEditBrand.value) {
-      //   await brandService.updateBrand(brandForm)
-      // } else {
-      //   await brandService.createBrand(brandForm)
-      // }
-      
-      // 模拟保存成功
       if (isEditBrand.value) {
-        const index = brandList.value.findIndex(item => item.id === brandForm.id)
-        if (index !== -1) {
-          brandList.value[index] = { ...brandForm }
-        }
+        response = await adminApi.updateBrand(brandForm.id, brandForm)
       } else {
-        // 模拟生成ID
-        const newId = Math.max(...brandList.value.map(item => item.id)) + 1
-        brandList.value.unshift({
-          ...brandForm,
-          id: newId,
-          createTime: new Date().toISOString().slice(0, 19).replace('T', ' ')
-        })
+        response = await adminApi.createBrand(brandForm)
       }
       
-      ElMessage.success(isEditBrand.value ? '编辑成功' : '添加成功')
-      brandDialogVisible.value = false
+      if (response) {
+        ElMessage.success(isEditBrand.value ? '编辑成功' : '添加成功')
+        brandDialogVisible.value = false
+        fetchBrands() // 刷新列表
+      }
     } catch (error) {
       console.error('保存品牌失败:', error)
       ElMessage.error('保存品牌失败')
@@ -938,13 +840,15 @@ const handleModelCurrentChange = (page) => {
 // 型号状态变更
 const handleModelStatusChange = async (row, status) => {
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // 通过API更新型号状态
+    const response = await adminApi.updatePhoneModel(row.id, {
+      ...row,
+      status: status
+    })
     
-    // 实际项目中应调用API更新状态
-    // await modelService.updateModelStatus(row.id, status)
-    
-    ElMessage.success(`已${status === 1 ? '启用' : '禁用'}型号: ${row.name}`)
+    if (response) {
+      ElMessage.success(`已${status === 1 ? '启用' : '禁用'}型号: ${row.name}`)
+    }
   } catch (error) {
     console.error('更新型号状态失败:', error)
     row.status = status === 1 ? 0 : 1 // 恢复状态
@@ -999,16 +903,13 @@ const handleDeleteModel = (row) => {
     }
   ).then(async () => {
     try {
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // 通过API删除型号
+      const response = await adminApi.deletePhoneModel(row.id)
       
-      // 实际项目中应调用API删除型号
-      // await modelService.deleteModel(row.id)
-      
-      // 更新本地状态
-      modelList.value = modelList.value.filter(item => item.id !== row.id)
-      
-      ElMessage.success('删除成功')
+      if (response) {
+        ElMessage.success('删除成功')
+        fetchModels() // 刷新列表
+      }
     } catch (error) {
       console.error('删除型号失败:', error)
       ElMessage.error('删除型号失败')
@@ -1021,7 +922,6 @@ const handleDeleteModel = (row) => {
 // 型号图片变更
 const handleModelImageChange = (file) => {
   // 在实际应用中，应该上传图片到服务器并获取URL
-  // 这里简单处理为本地预览
   modelForm.image = URL.createObjectURL(file.raw)
 }
 
@@ -1031,48 +931,19 @@ const submitModelForm = () => {
     if (!valid) return
     
     try {
-      // 模拟异步请求
-      await new Promise(resolve => setTimeout(resolve, 500))
+      let response;
       
-      // 实际项目中应调用API保存型号
-      // if (isEditModel.value) {
-      //   await modelService.updateModel(modelForm)
-      // } else {
-      //   await modelService.createModel(modelForm)
-      // }
-      
-      // 获取品牌信息
-      const brand = brandList.value.find(b => b.id === modelForm.brandId)
-      
-      // 模拟保存成功
       if (isEditModel.value) {
-        const index = modelList.value.findIndex(item => item.id === modelForm.id)
-        if (index !== -1) {
-          modelList.value[index] = { 
-            ...modelForm,
-            brand: {
-              id: brand.id,
-              name: brand.name,
-              logo: brand.logo
-            }
-          }
-        }
+        response = await adminApi.updatePhoneModel(modelForm.id, modelForm)
       } else {
-        // 模拟生成ID
-        const newId = Math.max(...modelList.value.map(item => item.id)) + 1
-        modelList.value.unshift({
-          ...modelForm,
-          id: newId,
-          brand: {
-            id: brand.id,
-            name: brand.name,
-            logo: brand.logo
-          }
-        })
+        response = await adminApi.createPhoneModel(modelForm)
       }
       
-      ElMessage.success(isEditModel.value ? '编辑成功' : '添加成功')
-      modelDialogVisible.value = false
+      if (response) {
+        ElMessage.success(isEditModel.value ? '编辑成功' : '添加成功')
+        modelDialogVisible.value = false
+        fetchModels() // 刷新列表
+      }
     } catch (error) {
       console.error('保存型号失败:', error)
       ElMessage.error('保存型号失败')

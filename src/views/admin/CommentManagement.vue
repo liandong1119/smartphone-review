@@ -80,6 +80,12 @@
               size="small" 
               @click="handleViewDetail(scope.row)"
             >详情</el-button>
+            <el-button 
+              size="small" 
+              type="danger" 
+              plain
+              @click="handleDelete(scope.row)"
+            >删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -124,8 +130,6 @@
             <div class="comment-content">{{ currentComment.content }}</div>
           </el-descriptions-item>
           <el-descriptions-item label="评论时间">{{ currentComment.createTime }}</el-descriptions-item>
-          <el-descriptions-item label="IP地址">{{ currentComment.ip || '未知' }}</el-descriptions-item>
-          <el-descriptions-item label="设备信息">{{ currentComment.device || '未知' }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag type="success" v-if="currentComment.status === 'approved'">已通过</el-tag>
             <el-tag type="warning" v-else-if="currentComment.status === 'pending'">待审核</el-tag>
@@ -190,67 +194,19 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
+import adminApi from '@/api/modules/admin'
 
 // 路由
 const router = useRouter()
 
-// 模拟评论数据
-const commentList = ref([
-  {
-    id: 1,
-    content: '这款手机的拍照功能确实很棒，我用了两周感觉非常满意',
-    user: {
-      id: 1,
-      username: 'user1',
-      avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-      email: 'user1@example.com'
-    },
-    postId: 101,
-    postTitle: '小米13 Ultra深度评测：影像旗舰的最佳选择？',
-    createTime: '2023-06-10 15:30:45',
-    status: 'approved',
-    ip: '192.168.1.100',
-    device: 'Chrome 114, Windows 11'
-  },
-  {
-    id: 2,
-    content: '价格有点贵，但性能确实强劲，玩游戏一点都不卡',
-    user: {
-      id: 2,
-      username: 'user2',
-      avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-      email: 'user2@example.com'
-    },
-    postId: 102,
-    postTitle: '一加 11 评测：骁龙8 Gen 2加持的性能怪兽',
-    createTime: '2023-06-12 09:15:22',
-    status: 'pending',
-    ip: '192.168.1.101',
-    device: 'Safari, iOS 16.5'
-  },
-  {
-    id: 3,
-    content: '这是一条广告内容，请访问xxx网站获取优惠',
-    user: {
-      id: 3,
-      username: 'spammer',
-      avatar: 'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9cpng.png',
-      email: 'spam@example.com'
-    },
-    postId: 103,
-    postTitle: 'vivo X90 Pro+详细体验：蔡司加持的影像旗舰',
-    createTime: '2023-06-14 22:45:10',
-    status: 'rejected',
-    ip: '192.168.1.102',
-    device: 'Firefox, Ubuntu 22.04'
-  }
-])
+// 评论数据列表
+const commentList = ref([])
 
 // 表格相关状态
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(100)
+const total = ref(0)
 const searchKeyword = ref('')
 const statusFilter = ref('')
 
@@ -272,20 +228,31 @@ onMounted(() => {
 const fetchComments = async () => {
   loading.value = true
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const response = await adminApi.getCommentList({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: searchKeyword.value,
+      status: statusFilter.value
+    })
     
-    // 实际项目中应从API获取数据
-    // const response = await commentService.getComments({
-    //   page: currentPage.value,
-    //   pageSize: pageSize.value,
-    //   keyword: searchKeyword.value,
-    //   status: statusFilter.value
-    // })
-    // commentList.value = response.records
-    // total.value = response.total
-    
-    // 这里简单展示模拟数据
+    if (response) {
+      // 重新格式化数据，确保每条评论都有用户对象
+      commentList.value = (response.records || []).map(comment => {
+        return {
+          ...comment,
+          // 确保用户对象的存在
+          user: {
+            id: comment.userId,
+            username: comment.username || '未知用户',
+            avatar: comment.userAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+            email: comment.email || ''
+          },
+          // 确保状态属性
+          status: comment.status || 'pending'
+        }
+      })
+      total.value = response.total || 0
+    }
   } catch (error) {
     console.error('获取评论列表失败:', error)
     ElMessage.error('获取评论列表失败')
@@ -316,7 +283,7 @@ const handleSizeChange = (size) => {
 // 查看文章
 const viewPost = (postId) => {
   // 在新标签页打开文章详情
-  const routeUrl = `/post/${postId}`
+  const routeUrl = `/review/${postId}`
   window.open(routeUrl, '_blank')
 }
 
@@ -329,26 +296,30 @@ const handleViewDetail = (comment) => {
 // 通过评论
 const handleApprove = async (comment) => {
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 300))
+    await ElMessageBox.confirm('确定要通过此评论吗?', '提示', {
+      type: 'info'
+    })
     
-    // 实际项目中应调用API更新评论状态
-    // await commentService.approveComment(comment.id)
+    const response = await adminApi.updateCommentStatus(comment.id, 'approved')
     
-    // 更新本地状态
-    const index = commentList.value.findIndex(item => item.id === comment.id)
-    if (index !== -1) {
-      commentList.value[index].status = 'approved'
+    if (response) {
+      // 更新本地状态
+      const index = commentList.value.findIndex(item => item.id === comment.id)
+      if (index !== -1) {
+        commentList.value[index].status = 'approved'
+      }
+      
+      if (currentComment.value && currentComment.value.id === comment.id) {
+        currentComment.value.status = 'approved'
+      }
+      
+      ElMessage.success('评论已通过审核')
     }
-    
-    if (currentComment.value && currentComment.value.id === comment.id) {
-      currentComment.value.status = 'approved'
-    }
-    
-    ElMessage.success('评论已通过审核')
   } catch (error) {
-    console.error('操作失败:', error)
-    ElMessage.error('操作失败')
+    if (error !== 'cancel') {
+      console.error('操作失败:', error)
+      ElMessage.error('操作失败')
+    }
   }
 }
 
@@ -374,31 +345,56 @@ const confirmReject = async () => {
   }
   
   try {
-    // 模拟异步请求
-    await new Promise(resolve => setTimeout(resolve, 300))
+    const reason = rejectReason.value === 'other' ? rejectDetail.value : rejectReason.value
     
-    // 实际项目中应调用API更新评论状态
-    // await commentService.rejectComment({
-    //   id: commentToReject.value.id,
-    //   reason: rejectReason.value === 'other' ? rejectDetail.value : rejectReason.value,
-    //   notifyUser: notifyUser.value
-    // })
+    const response = await adminApi.updateCommentStatus(commentToReject.value.id, 'rejected', {
+      reason: reason,
+      notifyUser: notifyUser.value
+    })
     
-    // 更新本地状态
-    const index = commentList.value.findIndex(item => item.id === commentToReject.value.id)
-    if (index !== -1) {
-      commentList.value[index].status = 'rejected'
+    if (response) {
+      // 更新本地状态
+      const index = commentList.value.findIndex(item => item.id === commentToReject.value.id)
+      if (index !== -1) {
+        commentList.value[index].status = 'rejected'
+      }
+      
+      if (currentComment.value && currentComment.value.id === commentToReject.value.id) {
+        currentComment.value.status = 'rejected'
+      }
+      
+      ElMessage.success('评论已被拒绝')
+      rejectDialogVisible.value = false
     }
-    
-    if (currentComment.value && currentComment.value.id === commentToReject.value.id) {
-      currentComment.value.status = 'rejected'
-    }
-    
-    ElMessage.success('评论已被拒绝')
-    rejectDialogVisible.value = false
   } catch (error) {
     console.error('操作失败:', error)
     ElMessage.error('操作失败')
+  }
+}
+
+// 删除评论
+const handleDelete = async (comment) => {
+  try {
+    await ElMessageBox.confirm('确定要删除此评论吗？删除后将无法恢复!', '警告', {
+      type: 'warning'
+    })
+    
+    const response = await adminApi.deleteComment(comment.id)
+    
+    if (response) {
+      ElMessage.success('评论已删除')
+      fetchComments() // 重新获取评论列表
+      
+      // 如果正在查看的评论被删除，关闭对话框
+      if (dialogVisible.value && currentComment.value && currentComment.value.id === comment.id) {
+        dialogVisible.value = false
+      }
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除评论失败:', error)
+      ElMessage.error('删除评论失败')
+    }
   }
 }
 </script>
