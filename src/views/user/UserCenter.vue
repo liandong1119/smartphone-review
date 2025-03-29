@@ -106,8 +106,8 @@
                 <div v-for="comment in userComments" :key="comment.id" class="comment-item">
                   <div class="comment-header">
                     <div class="comment-meta">
-                      <span class="comment-review" @click="viewComment(comment)" style="cursor: pointer; color: #409EFF;">《{{ comment.reviewTitle }}》</span>
-                      <span class="comment-time">{{ comment.commentTime }}</span>
+                      <span class="comment-review" @click="viewComment(comment)" style="cursor: pointer; color: #409EFF;">《{{ comment.postTitle }}》</span>
+                      <span class="comment-time">{{ comment.createTime }}</span>
                     </div>
                     <div class="comment-actions">
                       <el-button size="small" type="text" @click="editComment(comment)">

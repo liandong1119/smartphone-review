@@ -367,8 +367,8 @@ const toggleFavorite = async () => {
 const fetchComments = async () => {
   try {
     const result = await commentApi.getComments(reviewId.value)
-    if (result && result.list) {
-      commentList.value = result.list
+    if (result && result.records) {
+      commentList.value = result.records
     } else if (Array.isArray(result)) {
       commentList.value = result
     } else {
