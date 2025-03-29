@@ -175,7 +175,7 @@
       <!-- 评论区 -->
       <div class="comments-section" v-if="showComments">
         <div class="comment-header">
-          <h3>评论区 ({{ commentList.length }})</h3>
+          <h3>评论区 ({{ reviewDetail.comments }})</h3>
         </div>
         
         <div class="comment-list">
