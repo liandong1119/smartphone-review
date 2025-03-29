@@ -130,6 +130,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Message, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import {useUserStore} from "@/stores/user.js";
 
 const router = useRouter()
 const registerFormRef = ref(null)
@@ -210,9 +211,9 @@ const handleRegister = () => {
   
   registerFormRef.value.validate(valid => {
     if (!valid) return
-    
+
     loading.value = true
-    
+    useUserStore().register(registerForm.value)
     // 模拟注册API调用
     setTimeout(() => {
       // 模拟成功注册
@@ -224,15 +225,15 @@ const handleRegister = () => {
         role: registerForm.value.username.includes('admin') ? 'admin' : 'user', // 如果用户名包含"admin"，就赋予管理员角色
         token: 'mock-token-' + Math.random().toString(36).substr(2)
       }
-      
+
       // 将用户信息保存到localStorage
       localStorage.setItem('user', JSON.stringify(userInfo))
-      
+
       // 显示注册成功提示
       ElMessage.success('注册成功，正在为您跳转...')
-      
+
       loading.value = false
-      
+
       // 跳转到首页
       setTimeout(() => {
         router.push('/')

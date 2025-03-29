@@ -4,7 +4,7 @@ import instance from '../../utils/http';
 const postApi = {
   // 获取评测列表
   getPosts(params) {
-    return instance.get('/posts', { params });
+    return instance.get('/posts',  params );
   },
   
   // 获取推荐评测

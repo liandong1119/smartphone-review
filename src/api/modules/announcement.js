@@ -4,7 +4,7 @@ import instance from '../../utils/http';
 const announcementApi = {
   // 获取公告列表
   getAnnouncements() {
-    return instance.get('/announcements');
+    return instance.get('/announcement/list');
   }
 };
 

@@ -4,7 +4,7 @@ import instance from '../../utils/http';
 const notificationApi = {
   // 获取用户通知列表
   getNotifications(params) {
-    return instance.get('/notifications', { params });
+    return instance.get('/notifications',  params );
   },
   
   // 标记通知为已读

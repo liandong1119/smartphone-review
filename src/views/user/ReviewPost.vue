@@ -179,7 +179,7 @@ const postForm = ref({
   appearanceRating: 0,
   screenRating: 0,
   performanceRating: 0,
-  cameraRating: 0,
+    cameraRating: 0,
   batteryRating: 0,
   systemRating: 0
 })

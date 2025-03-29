@@ -186,22 +186,22 @@ const fetchUserProfile = async () => {
   loading.value = true
   try {
     // 这里在真实环境中会调用API
-    // const response = await userApi.getUserProfile(userId.value)
+    const response = await userApi.getUserProfile(userId.value)
     
     // 模拟API调用
-    const response = await new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          id: userId.value,
-          username: '用户_' + userId.value,
-          avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-          bio: '热爱数码产品的科技爱好者',
-          postsCount: 12,
-          totalLikes: 245,
-          viewCount: 1250,
-        })
-      }, 500)
-    })
+    // const response = await new Promise(resolve => {
+    //   setTimeout(() => {
+    //     resolve({
+    //       id: userId.value,
+    //       username: '用户_' + userId.value,
+    //       avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
+    //       bio: '热爱数码产品的科技爱好者',
+    //       postsCount: 12,
+    //       totalLikes: 245,
+    //       viewCount: 1250,
+    //     })
+    //   }, 500)
+    // })
     
     userProfile.value = response
     
@@ -340,10 +340,10 @@ const uploadAvatar = (options) => {
 }
 
 // 保存个人资料
-const saveProfile = () => {
+const saveProfile = async () => {
   // 模拟保存操作
   // 实际环境中应调用API
-  // await userApi.updateUserInfo(profileForm.value)
+  await userApi.updateUserInfo(profileForm.value)
   
   userProfile.value.username = profileForm.value.username
   userProfile.value.avatar = profileForm.value.avatarUrl

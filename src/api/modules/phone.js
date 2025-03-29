@@ -29,7 +29,7 @@ const phoneApi = {
   
   // 获取用户收藏的手机
   getFavoritePhones() {
-    return instance.get('/user/favorites?type=phone');
+    return instance.get('/phones/user/favorites');
   },
   
   // 收藏/取消收藏手机
