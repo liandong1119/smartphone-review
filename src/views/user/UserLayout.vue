@@ -122,13 +122,13 @@
             <el-avatar :size="42" icon="el-icon-user"></el-avatar>
             <div class="user-meta">
               <div class="username">{{ isLoggedIn ? username : '未登录' }}</div>
-              <div class="join-time">{{ isLoggedIn ? '注册于2023-09-01' : '请登录账号' }}</div>
+              <div class="join-time">{{ isLoggedIn ?  `注册于 ${createTime}` : '请登录账号' }}</div>
             </div>
           </div>
           
           <!-- 添加个性签名 -->
           <div class="user-signature" v-if="isLoggedIn">
-            "热爱科技，分享生活，手机控一枚~"
+            "{{ signature }}"
           </div>
           
           <!-- 添加用户统计信息 -->
@@ -194,6 +194,10 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const username = computed(() => userStore.userInfo?.username || '用户')
 const userAvatar = computed(() => userStore.userInfo?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
 const isAdmin = computed(() => userStore.isAdmin)
+const signature = computed(() => userStore.userInfo?.bio || '')
+const createTime = computed(() => {
+  return formatDate(userStore.userInfo?.createTime)
+})
 
 // 获取当前激活的菜单项
 const activeMenu = computed(() => {

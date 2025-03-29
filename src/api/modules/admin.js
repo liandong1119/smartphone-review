@@ -4,7 +4,7 @@ import instance from '../../utils/http';
 const adminApi = {
   // 用户管理
   getUserList(params) {
-    return instance.get('/user/admin/list', { params });
+    return instance.get('/user/admin/list', { ...params });
   },
   // 管理员添加用户
   createUser(data) {
@@ -32,7 +32,7 @@ const adminApi = {
   
   // 帖子管理
   getPostList(params) {
-    return instance.get('/admin/posts', { params });
+    return instance.get('/admin/posts', { ...params });
   },
   
   getPostComments(postId) {
@@ -49,7 +49,7 @@ const adminApi = {
   
   // 评论管理
   getCommentList(params) {
-    return instance.get('/admin/comments', { params });
+    return instance.get('/admin/comments', { ...params });
   },
   
   deleteComment(commentId) {
@@ -65,7 +65,7 @@ const adminApi = {
   
   // 公告管理
   getAnnouncementList(params) {
-    return instance.get('/admin/announcements', { params });
+    return instance.get('/admin/announcements', { ...params });
   },
   
   createAnnouncement(data) {
@@ -99,7 +99,7 @@ const adminApi = {
   
   // 手机型号管理
   getPhoneModelList(params) {
-    return instance.get('/phones/admin', { params });
+    return instance.get('/phones/admin', { ...params });
   },
   
   createPhoneModel(data) {
