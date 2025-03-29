@@ -301,6 +301,8 @@ const handleAddUser = () => {
 // 处理编辑用户
 const handleEdit = (row) => {
   isEdit.value = true
+    console.log("用户的id为：",row.id)
+    console.log("用户表单的数据为：",userForm.value)
   // 填充表单数据
   Object.assign(userForm, {
     id: row.id,
@@ -312,6 +314,13 @@ const handleEdit = (row) => {
     isMuted: row.isMuted,
     avatar: row.avatar
   })
+    // userForm.username = row.username
+    // userForm.id = row.id
+    // userForm.email = row.email
+    // userForm.role = row.role
+    // userForm.status = row.status
+    // userForm.isMuted = row.isMuted
+    // userForm.avatar = row.avatar
   dialogVisible.value = true
 }
 
@@ -367,13 +376,13 @@ const submitForm = async () => {
     if (valid) {
       try {
         let response
-        if (userForm.value.id) {
-          response = await adminApi.updateUser(userForm.value.id, userForm.value)
+        if (userForm.id) {
+          response = await adminApi.updateUser(userForm.id, userForm)
         } else {
-          response = await adminApi.createUser(userForm.value)
+          response = await adminApi.createUser(userForm)
         }
         if (response) {
-          ElMessage.success(userForm.value.id ? '更新成功' : '创建成功')
+          ElMessage.success(userForm.id ? '更新成功' : '创建成功')
           dialogVisible.value = false
           fetchUsers()
         }

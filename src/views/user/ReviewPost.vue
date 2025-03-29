@@ -98,22 +98,22 @@
 
           <el-form-item label="上传图片" prop="images">
             <el-upload
-              v-model:file-list="fileList"
-              action="/upload"
+              :action="uploadUrl"
               list-type="picture-card"
               :limit="9"
-              :auto-upload="false"
-              :on-change="handleChange"
+              :on-success="handleUploadSuccess"
+              :headers="handleHeaders"
+              :error="handleUploadError"
             >
               <el-icon><Plus /></el-icon>
-              <template #file="{ file }">
+<!--              <template #file="{ file }">
                 <div class="upload-item">
                   <img class="upload-image" :src="file.url" alt="" />
                   <div class="upload-actions">
                     <el-icon class="upload-delete" @click.stop="handleRemove(file)"><Delete /></el-icon>
                   </div>
                 </div>
-              </template>
+              </template>-->
             </el-upload>
             <div class="upload-tip">上传评测时的实拍图片，最多9张</div>
           </el-form-item>
@@ -166,6 +166,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Plus } from '@element-plus/icons-vue'
 import instance from '@/utils/http'
+import {phoneApi} from "@/api/index.js";
 
 // 表单数据
 const postFormRef = ref(null)
@@ -175,7 +176,7 @@ const postForm = ref({
   phoneModelId: '',
   rating: 0,
   content: '',
-  images: [],
+  fileList: [],
   appearanceRating: 0,
   screenRating: 0,
   performanceRating: 0,
@@ -184,6 +185,15 @@ const postForm = ref({
   systemRating: 0
 })
 
+/**
+ * 图片上传出现错误
+ */
+const handleUploadError = () => {
+    ElMessage.error(t('message.uploadFailed'))
+}
+
+const uploadUrl = "http://localhost:8080/api/upload/images";
+
 // 品牌和型号数据
 const brands = ref([])
 const phoneModels = ref([])
@@ -191,7 +201,9 @@ const loading = ref(false)
 const modelLoading = ref(false)
 const submitting = ref(false)
 const fileList = ref([])
-
+const brandsLoading = ref(false)
+const modelsLoading = ref(false
+)
 // 评分配置
 const colors = ['#99A9BF', '#F7BA2A', '#FF9900']
 const texts = ['失望', '一般', '满意', '推荐', '超赞']
@@ -217,11 +229,28 @@ const rules = {
   ]
 }
 
+const handleHeaders  =  {
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+}
+/**
+ * 图片上传成功后的回调
+ * @param response
+ * @param uploadFile
+ */
+const handleUploadSuccess = (response,uploadFile) => {
+    // 文件回填操作
+    // const {id: fileId, addr} = response.data
+    // uploadFile.fileId = fileId
+
+    postForm.value.fileList.push(response.data)
+    console.log("图片上传后： ",postForm.value.fileList)
+}
+
 // 获取所有品牌
 const fetchBrands = async () => {
   brandsLoading.value = true
   try {
-    const response = await instance.get('/brands')
+    const response = await phoneApi.getBrands()
     
     console.log('品牌接口原始响应:', response)
     
@@ -360,7 +389,7 @@ const submitReview = () => {
       return
     }
 
-    if (fileList.value.length === 0) {
+    if (postForm.value.fileList.length === 0) {
       ElMessageBox.confirm('您还没有上传任何图片，确定要继续发布吗？', '提示', {
         confirmButtonText: '继续发布',
         cancelButtonText: '取消',
@@ -378,10 +407,10 @@ const saveReview = async () => {
   submitting.value = true
   try {
     // 模拟上传成功
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // await new Promise(resolve => setTimeout(resolve, 1000))
     
     // 这里实现真实的API调用
-    // const response = await instance.post('/posts', postForm.value)
+    const response = await instance.post('/posts', postForm.value)
     
     ElMessage.success('评测发布成功！')
     resetForm()

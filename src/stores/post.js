@@ -90,9 +90,12 @@ export const usePostStore = defineStore('post', () => {
       if (post) {
         console.log(`获取到帖子详情:`, post)
         // 更新点赞和收藏状态
-        post.isLiked = !!likedPosts.value[post.id]
-        post.isFavorited = !!favoritedPosts.value[post.id]
+        // post.isLiked = post.isLiked
+        // post.isFavorited = !!favoritedPosts.value[post.id]
+
         currentPost.value = post
+        currentPost.value.likes  = post.likeCount
+        currentPost.value.favorites = post.favoriteCount
         console.log(`帖子详情处理完成，当前帖子:`, {
           id: post.id,
           title: post.title,

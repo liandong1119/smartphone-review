@@ -114,9 +114,9 @@
       <div class="content-text">{{ reviewDetail.content }}</div>
       
       <!-- 评测图片区域 -->
-      <div class="review-images" v-if="reviewDetail.images && reviewDetail.images.length > 0">
+      <div class="review-images" v-if="reviewDetail.fileList && reviewDetail.fileList.length > 0">
         <div 
-          v-for="(image, index) in reviewDetail.images" 
+          v-for="(image, index) in reviewDetail.fileList"
           :key="index" 
           class="review-image"
           :style="{ backgroundImage: `url(${image})` }"

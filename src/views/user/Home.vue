@@ -40,7 +40,7 @@
           <div class="user-info">
             <el-avatar :size="36" :src="post.userAvatar" @click="goToUserProfile(post)" class="clickable-avatar"></el-avatar>
             <div class="user-meta">
-              <span class="username clickable-username" @click="goToUserProfile(post)">{{ post.username }}</span>
+              <span class="username clickable-username" @click="goToUserProfile(post)">{{ post.nickname }}</span>
               <span class="datetime">{{ post.createTime }}</span>
             </div>
           </div>
@@ -57,7 +57,7 @@
         
         <div class="preview-images">
           <div 
-            v-for="(image, index) in post.images" 
+            v-for="(image, index) in post.fileList"
             :key="index" 
             class="preview-image"
             :style="{ backgroundImage: `url(${image})` }"
