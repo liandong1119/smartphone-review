@@ -84,7 +84,7 @@ export const useUserStore = defineStore('user', () => {
           localStorage.setItem('userId', response.user.id)
         }
         
-        ElMessage.success('注册成功')
+        ElMessage.success('注册成功,正在为你跳转....')
         return true
       }
       return false
