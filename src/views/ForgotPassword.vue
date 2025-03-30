@@ -121,6 +121,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { CircleCheck, Message, Key, Lock } from '@element-plus/icons-vue'
 import { createRules, validateEmail, validatePassword, validateConfirmPassword } from '@/utils/validate'
+import instance from "../utils/http.js"
+import {userApi} from "@/api/index.js";
 
 const router = useRouter()
 const currentStep = ref(1)
@@ -172,24 +174,25 @@ const resetRules = createRules({
   ]
 })
 
+const emailRegex = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/
 // 发送验证码
 const sendVerifyCode = async () => {
   if (!verifyForm.email) {
     ElMessage.warning('请先输入邮箱地址')
     return
   }
-  
-  if (!validateEmail.test(verifyForm.email)) {
-    ElMessage.warning('请输入正确的邮箱格式')
-    return
+
+  if (!emailRegex.test(verifyForm.email)){
+      ElMessage.warning('请输入正确的邮箱格式')
+      return;
   }
   
   try {
     codeSending.value = true
     
     // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    // await new Promise(resolve => setTimeout(resolve, 1000))
+    await instance.post("/email/verifyCode/send",{addr:verifyForm.email,msg:"您正在找回您的密码"})
     // 发送成功后开始倒计时
     countdown.value = 60
     const timer = setInterval(() => {
@@ -219,11 +222,15 @@ const verifyIdentity = async () => {
       verifying.value = true
       
       // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
+      // await new Promise(resolve => setTimeout(resolve, 1500))
+      const  res =  await instance.post("/email/verifyCode/check",{addr:verifyForm.email,code:verifyForm.verifyCode})
       // 验证成功，进入第二步
-      currentStep.value = 2
-      
+        if (res === true){
+            currentStep.value = 2
+        }else{
+            ElMessage.error('验证失败，请检查邮箱和验证码是否正确')
+        }
+
     } catch (error) {
       console.error('Failed to verify identity:', error)
       ElMessage.error('验证失败，请检查邮箱和验证码是否正确')
@@ -244,7 +251,7 @@ const resetPassword = async () => {
       resetting.value = true
       
       // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1500))
+       await userApi.findPassword({password:resetForm.password},{addr:verifyForm.email,code: verifyForm.verifyCode})
       
       // 重置成功，进入第三步
       currentStep.value = 3

@@ -6,7 +6,7 @@ import { ElMessage } from 'element-plus'
 export const useUserStore = defineStore('user', () => {
   // 状态
   const userInfo = ref(null)
-  const userStats = ref(null)
+  const userStats = ref({})
   const isLoggedIn = computed(() => !!userInfo.value)
   const isAdmin = computed(() => userInfo.value?.role === 'admin')
   const token = ref('')
@@ -105,7 +105,7 @@ export const useUserStore = defineStore('user', () => {
   // 清除用户数据
   function clearUserData() {
     userInfo.value = null
-    userStats.value = null
+    userStats.value = {}
     token.value = ''
     localStorage.removeItem('token')
     localStorage.removeItem('user')

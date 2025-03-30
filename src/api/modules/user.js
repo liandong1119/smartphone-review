@@ -30,7 +30,25 @@ const userApi = {
       }
     });
   },
-  
+
+  changePassword(data) {
+    return instance.put('/user/password', data);
+  },
+
+  /**
+   * 用户找回密码
+   * @param data
+   * @param params
+   * @returns {Promise<axios.AxiosResponse<any>>}
+   */
+  findPassword(data,params){
+    return instance.put('/user/password/find', data,{params:params});
+  },
+
+  bindEmail(data) {
+    return instance.put('/user/bindEmail', data);
+  },
+
   // 获取用户统计数据
   getUserStats() {
     return instance.get('/user/stats');

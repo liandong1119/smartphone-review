@@ -59,8 +59,8 @@
               <span class="post-date">{{ post.createTime }}</span>
             </div>
             <div class="post-preview">
-              <div class="preview-image" v-if="post.images && post.images.length > 0">
-                <img :src="post.images[0]" alt="预览图" />
+              <div class="preview-image" v-if="post.fileList && post.fileList.length > 0">
+                <img :src="post.fileList[0]" alt="预览图" />
               </div>
               <div class="preview-content">
                 <div class="post-stats">
@@ -71,7 +71,7 @@
                     <el-icon><ChatDotRound /></el-icon> {{ post.comments || 0 }}
                   </span>
                   <span class="stat">
-                    <el-icon><Star /></el-icon> {{ post.likes || 0 }}
+                    <el-icon><Star /></el-icon> {{ post.likeCount || 0 }}
                   </span>
                 </div>
                 <div class="action-buttons">

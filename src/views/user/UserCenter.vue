@@ -16,15 +16,15 @@
           
           <div class="user-stats">
             <div class="stat-item">
-              <div class="stat-value">{{ userStats.reviewCount }}</div>
+              <div class="stat-value">{{ useUserStore().userStats.postCount || 0 }}</div>
               <div class="stat-label">已发布</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">{{ userStats.likeCount }}</div>
+              <div class="stat-value">{{ useUserStore().userStats.likeCount || 0 }}</div>
               <div class="stat-label">获赞</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">{{ userStats.viewCount }}</div>
+              <div class="stat-value">{{ useUserStore().userStats.views || 0}}</div>
               <div class="stat-label">阅读量</div>
             </div>
           </div>
@@ -61,10 +61,10 @@
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column prop="publishTime" label="发布时间" width="180" sortable />
-                <el-table-column prop="viewCount" label="阅读量" width="100" sortable />
+                <el-table-column prop="createTime" label="发布时间" width="180" sortable />
+                <el-table-column prop="views" label="阅读量" width="100" sortable />
                 <el-table-column prop="likeCount" label="点赞数" width="100" sortable />
-                <el-table-column prop="commentCount" label="评论数" width="100" sortable />
+                <el-table-column prop="comments" label="评论数" width="100" sortable />
                 <el-table-column label="操作" width="150" fixed="right">
                   <template #default="scope">
                     <el-button 
@@ -426,6 +426,8 @@ import { createRules, validateEmail, validateMobile, validatePassword, validateC
 import userApi from '@/api/modules/user'
 import phoneApi from '@/api/modules/phone'
 import {uploadApi} from "@/api/index.js";
+import {useUserStore} from "../../stores/user.js";
+import instance from "../../utils/http.js";
 
 const router = useRouter()
 const activeTab = ref('reviews')
@@ -454,11 +456,11 @@ const userInfo = ref({
 })
 
 // 用户统计信息
-const userStats = ref({
-  reviewCount: 5,
-  likeCount: 120,
-  viewCount: 3560
-})
+// const userStats = ref({
+//   reviewCount: 5,
+//   likeCount: 120,
+//   viewCount: 3560
+// })
 
 // 个人资料表单
 const profileForm = ref({
@@ -914,8 +916,8 @@ const changePassword = () => {
       submitting.value = true
       
       // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
+      // await new Promise(resolve => setTimeout(resolve, 1500))
+      await userApi.changePassword({oldPassword:passwordForm.value.currentPassword,password:passwordForm.value.newPassword});
       ElMessage.success('密码修改成功')
       passwordDialogVisible.value = false
     } catch (error) {
@@ -952,8 +954,8 @@ const sendEmailCode = async () => {
     codeSending.value = true
     
     // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    // await new Promise(resolve => setTimeout(resolve, 1000))
+    await instance.post("/email/verifyCode/send",{addr:emailForm.value.email,msg:"您正在绑定邮箱"});
     // 发送成功后开始倒计时
     emailCountdown.value = 60
     const timer = setInterval(() => {
@@ -983,8 +985,8 @@ const bindEmail = () => {
       submitting.value = true
       
       // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
+      // await new Promise(resolve => setTimeout(resolve, 1500))
+      await userApi.bindEmail({addr: emailForm.value.email, code: emailForm.value.verifyCode})
       // 更新本地用户信息
       userInfo.value.email = emailForm.value.email
       

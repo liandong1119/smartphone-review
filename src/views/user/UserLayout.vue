@@ -119,30 +119,30 @@
         <!-- 用户信息卡片，添加更多详细内容 -->
         <el-card class="user-info-card">
           <div class="user-info-header">
-            <el-avatar :size="42" icon="el-icon-user"></el-avatar>
+            <el-avatar :size="42" ><img :src="userAvatar"/></el-avatar>
             <div class="user-meta">
               <div class="username">{{ isLoggedIn ? username : '未登录' }}</div>
-              <div class="join-time">{{ isLoggedIn ? '注册于2023-09-01' : '请登录账号' }}</div>
+              <div class="join-time">{{ isLoggedIn ? `注册于${registeTime}` : '请登录账号' }}</div>
             </div>
           </div>
           
           <!-- 添加个性签名 -->
           <div class="user-signature" v-if="isLoggedIn">
-            "热爱科技，分享生活，手机控一枚~"
+              {{ bio }}
           </div>
           
           <!-- 添加用户统计信息 -->
           <div class="user-stats" v-if="isLoggedIn">
             <div class="stat-item">
-              <div class="stat-value">32</div>
+              <div class="stat-value">{{postCount}}</div>
               <div class="stat-label">帖子</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">128</div>
+              <div class="stat-value">{{likeCount}}</div>
               <div class="stat-label">点赞</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">56</div>
+              <div class="stat-value">{{favoriteCount}}</div>
               <div class="stat-label">收藏</div>
             </div>
           </div>
@@ -189,12 +189,17 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+const likeCount = computed(() => userStore.userStats.likeCount || 0)
+const postCount = computed(() => userStore.userStats.postCount || 0)
+const favoriteCount = computed(() => userStore.userStats.favoriteCount || 0)
+
 // 用户登录状态（从store中获取）
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const username = computed(() => userStore.userInfo?.username || '用户')
 const userAvatar = computed(() => userStore.userInfo?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
 const isAdmin = computed(() => userStore.isAdmin)
-
+const registeTime = computed(() => userStore.userInfo?.createTime)
+const bio = computed (() => userStore.userInfo?.bio)
 // 获取当前激活的菜单项
 const activeMenu = computed(() => {
   return route.path
