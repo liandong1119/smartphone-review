@@ -209,36 +209,17 @@ const handleRegister = () => {
     return
   }
   
-  registerFormRef.value.validate(valid => {
+  registerFormRef.value.validate(async valid => {
     if (!valid) return
 
     loading.value = true
-    useUserStore().register(registerForm.value)
-    // 模拟注册API调用
-    setTimeout(() => {
-      // 模拟成功注册
-      const userInfo = {
-        id: Math.floor(Math.random() * 1000) + 1,
-        username: registerForm.value.username,
-        email: registerForm.value.email,
-        avatar: 'https://via.placeholder.com/100',
-        role: registerForm.value.username.includes('admin') ? 'admin' : 'user', // 如果用户名包含"admin"，就赋予管理员角色
-        token: 'mock-token-' + Math.random().toString(36).substr(2)
-      }
-
-      // 将用户信息保存到localStorage
-      localStorage.setItem('user', JSON.stringify(userInfo))
-
-      // 显示注册成功提示
-      ElMessage.success('注册成功，正在为您跳转...')
-
-      loading.value = false
-
-      // 跳转到首页
+    const res =  await useUserStore().register(registerForm.value)
+    if(res === true){
       setTimeout(() => {
         router.push('/')
-      }, 1500)
-    }, 1500)
+      }, 1500);
+    }
+    loading.value = false
   })
 }
 
