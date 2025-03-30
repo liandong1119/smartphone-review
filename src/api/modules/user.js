@@ -61,8 +61,10 @@ const userApi = {
   
   // 获取用户的评测列表
   getUserPosts(userId, params) {
-    return instance.get(`/user/${userId}/posts`, { params });
+    return instance.get(`/user/profile/${userId}/posts`,  params );
   },
+
+
   
   // 关注用户
   followUser(userId) {

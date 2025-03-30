@@ -20,7 +20,7 @@
             </h2>
             <div class="announcement-meta">
               <el-icon><Clock /></el-icon>
-              <time>{{ formatDate(announcement.createTime) }}</time>
+              <time>{{ formatDate(announcement.publishTime) }}</time>
             </div>
           </div>
           
@@ -56,7 +56,7 @@ const fetchAnnouncements = async () => {
           return a.isTop ? -1 : 1
         }
         // 其次按照创建时间排序（新的在前）
-        return new Date(b.createTime) - new Date(a.createTime)
+        // return new Date(b.createTime) - new Date(a.createTime)
       })
     } else {
       ElMessage.error('获取公告失败')

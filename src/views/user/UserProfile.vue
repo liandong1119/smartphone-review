@@ -18,15 +18,15 @@
             <p class="user-bio">{{ userProfile.bio || '这个人很懒，还没有填写个人简介' }}</p>
             <div class="user-stats">
               <div class="stat-item">
-                <span class="stat-value">{{ userProfile.postsCount }}</span>
+                <span class="stat-value">{{ userProfile.postCount }}</span>
                 <span class="stat-label">发布</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ userProfile.totalLikes }}</span>
+                <span class="stat-value">{{ userProfile.likeCount }}</span>
                 <span class="stat-label">获赞</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ userProfile.viewCount }}</span>
+                <span class="stat-value">{{ userProfile.views }}</span>
                 <span class="stat-label">浏览</span>
               </div>
             </div>
@@ -218,45 +218,45 @@ const fetchUserProfile = async () => {
 const fetchUserPosts = async () => {
   try {
     // 这里在真实环境中会调用API
-    // const response = await userApi.getUserPosts(userId.value, { 
-    //   page: currentPage.value, 
-    //   pageSize: pageSize.value 
-    // })
-    
-    // 模拟API调用
-    const response = await new Promise(resolve => {
-      setTimeout(() => {
-        // 生成模拟数据
-        const mockPosts = []
-        const totalCount = 12
-        
-        for (let i = 0; i < Math.min(pageSize.value, totalCount - (currentPage.value - 1) * pageSize.value); i++) {
-          const postId = (currentPage.value - 1) * pageSize.value + i + 1
-          mockPosts.push({
-            id: postId.toString(),
-            content: `这是用户${userId.value}发布的第${postId}篇评测，内容很丰富，包含了详细的使用体验和测试数据...`,
-            createTime: `2023-${Math.floor(Math.random() * 12) + 1}-${Math.floor(Math.random() * 28) + 1}`,
-            images: [
-              `https://via.placeholder.com/300/4FC3F7/FFFFFF?text=Review+${postId}`
-            ],
-            views: Math.floor(Math.random() * 1000),
-            comments: Math.floor(Math.random() * 50),
-            likes: Math.floor(Math.random() * 100),
-            brand: '示例品牌',
-            phoneModel: '示例型号'
-          })
-        }
-        
-        resolve({
-          list: mockPosts,
-          total: totalCount,
-          page: currentPage.value,
-          pageSize: pageSize.value
-        })
-      }, 500)
+    const response = await userApi.getUserPosts(userId.value, {
+      pageNum: currentPage.value,
+      pageSize: pageSize.value
     })
     
-    userPosts.value = response.list
+    // 模拟API调用
+    // const response = await new Promise(resolve => {
+    //   setTimeout(() => {
+    //     // 生成模拟数据
+    //     const mockPosts = []
+    //     const totalCount = 12
+    //
+    //     for (let i = 0; i < Math.min(pageSize.value, totalCount - (currentPage.value - 1) * pageSize.value); i++) {
+    //       const postId = (currentPage.value - 1) * pageSize.value + i + 1
+    //       mockPosts.push({
+    //         id: postId.toString(),
+    //         content: `这是用户${userId.value}发布的第${postId}篇评测，内容很丰富，包含了详细的使用体验和测试数据...`,
+    //         createTime: `2023-${Math.floor(Math.random() * 12) + 1}-${Math.floor(Math.random() * 28) + 1}`,
+    //         images: [
+    //           `https://via.placeholder.com/300/4FC3F7/FFFFFF?text=Review+${postId}`
+    //         ],
+    //         views: Math.floor(Math.random() * 1000),
+    //         comments: Math.floor(Math.random() * 50),
+    //         likes: Math.floor(Math.random() * 100),
+    //         brand: '示例品牌',
+    //         phoneModel: '示例型号'
+    //       })
+    //     }
+    //
+    //     resolve({
+    //       list: mockPosts,
+    //       total: totalCount,
+    //       page: currentPage.value,
+    //       pageSize: pageSize.value
+    //     })
+    //   }, 500)
+    // })
+    
+    userPosts.value = response.records
     totalPosts.value = response.total
     loading.value = false
   } catch (error) {

@@ -358,7 +358,6 @@ const handlePublish = (row) => {
   ).then(async () => {
     try {
       const response = await adminApi.updateAnnouncement(row.id, {
-        ...row,
         status: 'published',
         publishTime: new Date().toISOString().slice(0, 19).replace('T', ' ')
       })
@@ -395,7 +394,6 @@ const handleUnpublish = (row) => {
   ).then(async () => {
     try {
       const response = await adminApi.updateAnnouncement(row.id, {
-        ...row,
         status: 'draft'
       })
       
