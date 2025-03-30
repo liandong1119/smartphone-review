@@ -8,22 +8,17 @@
                         <div class="card-header">
                             <span>品牌列表</span>
                             <div class="header-operations">
-                                <el-input
-                                        v-model="brandSearchKeyword"
-                                        placeholder="搜索品牌名称"
-                                        clearable
-                                        @keyup.enter="handleBrandSearch"
-                                        style="width: 250px; margin-right: 15px;"
-                                >
+                                <el-input v-model="brandSearchKeyword" placeholder="搜索品牌名称" clearable
+                                    @keyup.enter="handleBrandSearch" style="width: 250px; margin-right: 15px;">
                                     <template #prefix>
                                         <el-icon>
-                                            <Search/>
+                                            <Search />
                                         </el-icon>
                                     </template>
                                 </el-input>
                                 <el-button type="primary" @click="handleAddBrand">
                                     <el-icon>
-                                        <Plus/>
+                                        <Plus />
                                     </el-icon>
                                     新增品牌
                                 </el-button>
@@ -32,39 +27,28 @@
                     </template>
 
                     <!-- 品牌表格 -->
-                    <el-table
-                            v-loading="brandLoading"
-                            :data="brandList"
-                            border
-                            style="width: 100%"
-                            row-key="id"
-                    >
-                        <el-table-column type="index" width="60" align="center" label="序号"/>
-                        <el-table-column prop="id" label="品牌ID" width="80"/>
+                    <el-table v-loading="brandLoading" :data="brandList" border style="width: 100%" row-key="id">
+                        <el-table-column type="index" width="60" align="center" label="序号" />
+                        <el-table-column prop="id" label="品牌ID" width="80" />
                         <el-table-column label="品牌Logo" width="120" align="center">
                             <template #default="scope">
-                                <el-image
-                                        style="width: 80px; height: 40px"
-                                        :src="scope.row.logo"
-                                        fit="contain"
-                                        :preview-src-list="[scope.row.logo]"
-                                />
+                                <el-image style="width: 80px; height: 40px" :src="scope.row.logo" fit="contain"
+                                    :preview-src-list="[scope.row.logo]" />
                             </template>
                         </el-table-column>
-                        <el-table-column prop="name" label="品牌名称" min-width="120"/>
-                        <el-table-column prop="nameEn" label="英文名称" min-width="120"/>
-                        <el-table-column prop="country" label="所属国家" width="120"/>
-                        <el-table-column prop="createTime" label="创建时间" width="160"/>
+                        <el-table-column prop="name" label="品牌名称" min-width="120" />
+                        <el-table-column prop="nameEn" label="英文名称" min-width="120" />
+                        <el-table-column prop="country" label="所属国家" width="120" />
+                        <el-table-column prop="createTime" label="创建时间" width="160">
+                            <template #default="scope">
+                                {{ formatDate(scope.row.createTime)  }}
+                            </template>
+                        </el-table-column>
                         <el-table-column label="状态" width="100">
                             <template #default="scope">
-                                <el-switch
-                                        v-model="scope.row.status"
-                                        :active-value="1"
-                                        :inactive-value="0"
-                                        @change="(val) => handleBrandStatusChange(scope.row, val)"
-                                        active-color="#13ce66"
-                                        inactive-color="#ff4949"
-                                />
+                                <el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0"
+                                    @change="(val) => handleBrandStatusChange(scope.row, val)" active-color="#13ce66"
+                                    inactive-color="#ff4949" />
                             </template>
                         </el-table-column>
                         <el-table-column label="操作" width="230" fixed="right">
@@ -72,11 +56,7 @@
                                 <el-button size="small" @click="handleEditBrand(scope.row)">编辑</el-button>
                                 <el-button size="small" type="primary" @click="handleManageModels(scope.row)">型号管理
                                 </el-button>
-                                <el-button
-                                        size="small"
-                                        type="danger"
-                                        @click="handleDeleteBrand(scope.row)"
-                                >删除
+                                <el-button size="small" type="danger" @click="handleDeleteBrand(scope.row)">删除
                                 </el-button>
                             </template>
                         </el-table-column>
@@ -84,16 +64,10 @@
 
                     <!-- 品牌分页 -->
                     <div class="pagination-container">
-                        <el-pagination
-                                background
-                                v-model:current-page="brandCurrentPage"
-                                v-model:page-size="brandPageSize"
-                                :page-sizes="[10, 20, 50, 100]"
-                                layout="total, sizes, prev, pager, next, jumper"
-                                :total="brandTotal"
-                                @size-change="handleBrandSizeChange"
-                                @current-change="handleBrandCurrentChange"
-                        />
+                        <el-pagination background v-model:current-page="brandCurrentPage"
+                            v-model:page-size="brandPageSize" :page-sizes="[10, 20, 50, 100]"
+                            layout="total, sizes, prev, pager, next, jumper" :total="brandTotal"
+                            @size-change="handleBrandSizeChange" @current-change="handleBrandCurrentChange" />
                     </div>
                 </el-card>
             </el-tab-pane>
@@ -105,38 +79,24 @@
                         <div class="card-header">
                             <div class="header-title">
                                 <span>手机型号列表</span>
-                                <el-select
-                                        v-model="modelFilterBrandId"
-                                        placeholder="选择品牌过滤"
-                                        clearable
-                                        style="margin-left: 15px; width: 200px"
-                                        @change="handleModelBrandFilter"
-                                >
-                                    <el-option
-                                            v-for="brand in brandOptions"
-                                            :key="brand.id"
-                                            :label="brand.name"
-                                            :value="brand.id"
-                                    />
+                                <el-select v-model="modelFilterBrandId" placeholder="选择品牌过滤" clearable
+                                    style="margin-left: 15px; width: 200px" @change="handleModelBrandFilter">
+                                    <el-option v-for="brand in brandOptions" :key="brand.id" :label="brand.name"
+                                        :value="brand.id" />
                                 </el-select>
                             </div>
                             <div class="header-operations">
-                                <el-input
-                                        v-model="modelSearchKeyword"
-                                        placeholder="搜索型号名称/特性"
-                                        clearable
-                                        @keyup.enter="handleModelSearch"
-                                        style="width: 250px; margin-right: 15px;"
-                                >
+                                <el-input v-model="modelSearchKeyword" placeholder="搜索型号名称/特性" clearable
+                                    @keyup.enter="handleModelSearch" style="width: 250px; margin-right: 15px;">
                                     <template #prefix>
                                         <el-icon>
-                                            <Search/>
+                                            <Search />
                                         </el-icon>
                                     </template>
                                 </el-input>
                                 <el-button type="primary" @click="handleAddModel">
                                     <el-icon>
-                                        <Plus/>
+                                        <Plus />
                                     </el-icon>
                                     新增型号
                                 </el-button>
@@ -145,39 +105,26 @@
                     </template>
 
                     <!-- 型号表格 -->
-                    <el-table
-                            v-loading="modelLoading"
-                            :data="modelList"
-                            border
-                            style="width: 100%"
-                            row-key="id"
-                    >
-                        <el-table-column type="index" width="60" align="center" label="序号"/>
-                        <el-table-column prop="id" label="型号ID" width="80"/>
+                    <el-table v-loading="modelLoading" :data="modelList" border style="width: 100%" row-key="id">
+                        <el-table-column type="index" width="60" align="center" label="序号" />
+                        <el-table-column prop="id" label="型号ID" width="80" />
                         <el-table-column label="手机图片" width="120" align="center">
                             <template #default="scope">
-                                <el-image
-                                        style="width: 60px; height: 60px"
-                                        :src="scope.row.image"
-                                        fit="cover"
-                                        :preview-src-list="[scope.row.image]"
-                                />
+                                <el-image style="width: 60px; height: 60px" :src="scope.row.image" fit="cover"
+                                    :preview-src-list="[scope.row.image]" />
                             </template>
                         </el-table-column>
                         <el-table-column label="所属品牌" width="120">
                             <template #default="scope">
                                 <div class="brand-info">
-                                    <el-image
-                                            style="width: 60px; height: 30px"
-                                            :src="scope.row.brand.logo"
-                                            fit="contain"
-                                    />
+                                    <el-image style="width: 60px; height: 30px" :src="scope.row.brand.logo"
+                                        fit="contain" />
                                     <span>{{ scope.row.brand.name }}</span>
                                 </div>
                             </template>
                         </el-table-column>
-                        <el-table-column prop="name" label="型号名称" min-width="150"/>
-                        <el-table-column prop="releaseDate" label="发布日期" width="120"/>
+                        <el-table-column prop="name" label="型号名称" min-width="150" />
+                        <el-table-column prop="releaseDate" label="发布日期" width="120" />
                         <el-table-column prop="price" label="参考价格" width="120">
                             <template #default="scope">
                                 ¥{{ scope.row.price }}
@@ -185,24 +132,15 @@
                         </el-table-column>
                         <el-table-column label="状态" width="100">
                             <template #default="scope">
-                                <el-switch
-                                        v-model="scope.row.status"
-                                        :active-value="1"
-                                        :inactive-value="0"
-                                        @change="(val) => handleModelStatusChange(scope.row, val)"
-                                        active-color="#13ce66"
-                                        inactive-color="#ff4949"
-                                />
+                                <el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0"
+                                    @change="(val) => handleModelStatusChange(scope.row, val)" active-color="#13ce66"
+                                    inactive-color="#ff4949" />
                             </template>
                         </el-table-column>
                         <el-table-column label="操作" width="200" fixed="right">
                             <template #default="scope">
                                 <el-button size="small" @click="handleEditModel(scope.row)">编辑</el-button>
-                                <el-button
-                                        size="small"
-                                        type="danger"
-                                        @click="handleDeleteModel(scope.row)"
-                                >删除
+                                <el-button size="small" type="danger" @click="handleDeleteModel(scope.row)">删除
                                 </el-button>
                             </template>
                         </el-table-column>
@@ -210,185 +148,124 @@
 
                     <!-- 型号分页 -->
                     <div class="pagination-container">
-                        <el-pagination
-                                background
-                                v-model:current-page="modelCurrentPage"
-                                v-model:page-size="modelPageSize"
-                                :page-sizes="[10, 20, 50, 100]"
-                                layout="total, sizes, prev, pager, next, jumper"
-                                :total="modelTotal"
-                                @size-change="handleModelSizeChange"
-                                @current-change="handleModelCurrentChange"
-                        />
+                        <el-pagination background v-model:current-page="modelCurrentPage"
+                            v-model:page-size="modelPageSize" :page-sizes="[10, 20, 50, 100]"
+                            layout="total, sizes, prev, pager, next, jumper" :total="modelTotal"
+                            @size-change="handleModelSizeChange" @current-change="handleModelCurrentChange" />
                     </div>
                 </el-card>
             </el-tab-pane>
         </el-tabs>
 
         <!-- 品牌编辑/新增对话框 -->
-        <el-dialog
-                v-model="brandDialogVisible"
-                :title="isEditBrand ? '编辑品牌' : '新增品牌'"
-                width="500px"
-                :close-on-click-modal="false"
-        >
-            <el-form
-                    ref="brandFormRef"
-                    :model="brandForm"
-                    :rules="brandFormRules"
-                    label-width="80px"
-            >
+        <el-dialog v-model="brandDialogVisible" :title="isEditBrand ? '编辑品牌' : '新增品牌'" width="500px"
+            :close-on-click-modal="false">
+            <el-form ref="brandFormRef" :model="brandForm" :rules="brandFormRules" label-width="80px">
                 <el-form-item label="品牌名称" prop="name">
-                    <el-input v-model="brandForm.name" placeholder="请输入品牌名称"/>
+                    <el-input v-model="brandForm.name" placeholder="请输入品牌名称" />
                 </el-form-item>
                 <el-form-item label="英文名称" prop="nameEn">
-                    <el-input v-model="brandForm.nameEn" placeholder="请输入英文名称"/>
+                    <el-input v-model="brandForm.nameEn" placeholder="请输入英文名称" />
                 </el-form-item>
                 <el-form-item label="所属国家" prop="country">
                     <el-select v-model="brandForm.country" placeholder="请选择国家" style="width: 100%">
-                        <el-option label="中国" value="中国"/>
-                        <el-option label="美国" value="美国"/>
-                        <el-option label="韩国" value="韩国"/>
-                        <el-option label="日本" value="日本"/>
-                        <el-option label="芬兰" value="芬兰"/>
-                        <el-option label="其他" value="其他"/>
+                        <el-option label="中国" value="中国" />
+                        <el-option label="美国" value="美国" />
+                        <el-option label="韩国" value="韩国" />
+                        <el-option label="日本" value="日本" />
+                        <el-option label="芬兰" value="芬兰" />
+                        <el-option label="其他" value="其他" />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="品牌Logo" prop="logo">
-                    <el-upload
-                            class="avatar-uploader"
-                            action=""
-                            :show-file-list="false"
-                            :auto-upload="false"
-                            :on-change="handleBrandLogoChange"
-                    >
-                        <img v-if="brandForm.logo" :src="brandForm.logo" class="avatar"/>
+                    <el-upload class="avatar-uploader" action="" :show-file-list="false" :auto-upload="false"
+                        :on-change="handleBrandLogoChange">
+                        <img v-if="brandForm.logo" :src="brandForm.logo" class="avatar" />
                         <el-icon v-else class="avatar-uploader-icon">
-                            <Plus/>
+                            <Plus />
                         </el-icon>
                     </el-upload>
                     <div class="upload-tip">建议上传品牌Logo，尺寸比例为 2:1</div>
                 </el-form-item>
                 <el-form-item label="描述" prop="description">
-                    <el-input
-                            v-model="brandForm.description"
-                            type="textarea"
-                            :rows="3"
-                            placeholder="请输入品牌描述（可选）"
-                    />
+                    <el-input v-model="brandForm.description" type="textarea" :rows="3" placeholder="请输入品牌描述（可选）" />
                 </el-form-item>
                 <el-form-item label="状态" prop="status">
-                    <el-switch
-                            v-model="brandForm.status"
-                            :active-value="1"
-                            :inactive-value="0"
-                            active-text="启用"
-                            inactive-text="禁用"
-                    />
+                    <el-switch v-model="brandForm.status" :active-value="1" :inactive-value="0" active-text="启用"
+                        inactive-text="禁用" />
                 </el-form-item>
             </el-form>
             <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="brandDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitBrandForm">确定</el-button>
-        </span>
+                <span class="dialog-footer">
+                    <el-button @click="brandDialogVisible = false">取消</el-button>
+                    <el-button type="primary" @click="submitBrandForm">确定</el-button>
+                </span>
             </template>
         </el-dialog>
 
         <!-- 型号编辑/新增对话框 -->
-        <el-dialog
-                v-model="modelDialogVisible"
-                :title="isEditModel ? '编辑型号' : '新增型号'"
-                width="700px"
-                :close-on-click-modal="false"
-        >
-            <el-form
-                    ref="modelFormRef"
-                    :model="modelForm"
-                    :rules="modelFormRules"
-                    label-width="100px"
-            >
+        <el-dialog v-model="modelDialogVisible" :title="isEditModel ? '编辑型号' : '新增型号'" width="700px"
+            :close-on-click-modal="false">
+            <el-form ref="modelFormRef" :model="modelForm" :rules="modelFormRules" label-width="100px">
                 <el-divider content-position="center">基本信息</el-divider>
 
                 <el-form-item label="所属品牌" prop="brandId">
                     <el-select v-model="modelForm.brandId" placeholder="请选择品牌" filterable>
-                        <el-option
-                                v-for="brand in brandOptions"
-                                :key="brand.id"
-                                :label="brand.name"
-                                :value="brand.id"
-                        />
+                        <el-option v-for="brand in brandOptions" :key="brand.id" :label="brand.name"
+                            :value="brand.id" />
                     </el-select>
                 </el-form-item>
 
                 <el-form-item label="型号名称" prop="name">
-                    <el-input v-model="modelForm.name" placeholder="请输入型号名称"/>
+                    <el-input v-model="modelForm.name" placeholder="请输入型号名称" />
                 </el-form-item>
 
                 <div class="form-row">
                     <el-form-item label="发布日期" prop="releaseDate" class="form-col">
-                        <el-date-picker
-                                v-model="modelForm.releaseDate"
-                                type="date"
-                                placeholder="选择发布日期"
-                                format="YYYY-MM-DD"
-                                value-format="YYYY-MM-DD"
-                        />
+                        <el-date-picker v-model="modelForm.releaseDate" type="date" placeholder="选择发布日期"
+                            format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
                     </el-form-item>
                     <el-form-item label="参考价格" prop="price" class="form-col">
-                        <el-input-number v-model="modelForm.price" :min="0" :step="100" controls-position="right"/>
+                        <el-input-number v-model="modelForm.price" :min="0" :step="100" controls-position="right" />
                     </el-form-item>
                 </div>
 
                 <el-form-item label="型号图片" prop="image">
-                    <el-upload
-                            class="avatar-uploader"
-                            :show-file-list="false"
-                            :auto-upload="false"
-                            :on-change="handlePhoneModelImageChange"
-                    >
-                        <img v-if="modelForm.image" :src="modelForm.image" class="avatar"/>
+                    <el-upload class="avatar-uploader" :show-file-list="false" :auto-upload="false"
+                        :on-change="handlePhoneModelImageChange">
+                        <img v-if="modelForm.image" :src="modelForm.image" class="avatar" />
                         <el-icon v-else class="avatar-uploader-icon">
-                            <Plus/>
+                            <Plus />
                         </el-icon>
                     </el-upload>
                 </el-form-item>
 
                 <el-form-item label="型号描述" prop="description">
-                    <el-input
-                            v-model="modelForm.description"
-                            type="textarea"
-                            :rows="3"
-                            placeholder="请输入型号描述信息"
-                    />
+                    <el-input v-model="modelForm.description" type="textarea" :rows="3" placeholder="请输入型号描述信息" />
                 </el-form-item>
 
                 <el-form-item label="状态" prop="status">
-                    <el-switch
-                            v-model="modelForm.status"
-                            :active-value="1"
-                            :inactive-value="0"
-                            active-text="启用"
-                            inactive-text="禁用"
-                    />
+                    <el-switch v-model="modelForm.status" :active-value="1" :inactive-value="0" active-text="启用"
+                        inactive-text="禁用" />
                 </el-form-item>
             </el-form>
             <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="modelDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitModelForm">确定</el-button>
-        </span>
+                <span class="dialog-footer">
+                    <el-button @click="modelDialogVisible = false">取消</el-button>
+                    <el-button type="primary" @click="submitModelForm">确定</el-button>
+                </span>
             </template>
         </el-dialog>
     </div>
 </template>
 
 <script setup>
-import {ref, reactive, onMounted, computed} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
-import {Search, Plus} from '@element-plus/icons-vue'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Plus } from '@element-plus/icons-vue'
 import adminApi from '@/api/modules/admin'
-import {uploadApi} from "@/api/index.js";
+import { uploadApi } from "@/api/index.js";
+import dayjs from 'dayjs'
 
 // 标签页
 const activeTab = ref('brand')
@@ -437,15 +314,15 @@ const brandForm = reactive({
 // 品牌表单验证规则
 const brandFormRules = {
     name: [
-        {required: true, message: '请输入品牌名称', trigger: 'blur'},
-        {min: 1, max: 20, message: '长度在 1 到 20 个字符', trigger: 'blur'}
+        { required: true, message: '请输入品牌名称', trigger: 'blur' },
+        { min: 1, max: 20, message: '长度在 1 到 20 个字符', trigger: 'blur' }
     ],
     nameEn: [
-        {required: true, message: '请输入英文名称', trigger: 'blur'},
-        {min: 1, max: 30, message: '长度在 1 到 30 个字符', trigger: 'blur'}
+        { required: true, message: '请输入英文名称', trigger: 'blur' },
+        { min: 1, max: 30, message: '长度在 1 到 30 个字符', trigger: 'blur' }
     ],
     country: [
-        {required: true, message: '请选择所属国家', trigger: 'change'}
+        { required: true, message: '请选择所属国家', trigger: 'change' }
     ]
 }
 
@@ -467,17 +344,17 @@ const modelForm = reactive({
 // 型号表单验证规则
 const modelFormRules = {
     brandId: [
-        {required: true, message: '请选择所属品牌', trigger: 'change'}
+        { required: true, message: '请选择所属品牌', trigger: 'change' }
     ],
     name: [
-        {required: true, message: '请输入型号名称', trigger: 'blur'},
-        {min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur'}
+        { required: true, message: '请输入型号名称', trigger: 'blur' },
+        { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
     ],
     release: [
-        {required: true, message: '请选择发布日期', trigger: 'change'}
+        { required: true, message: '请选择发布日期', trigger: 'change' }
     ],
     price: [
-        {required: true, message: '请输入参考价格', trigger: 'blur'}
+        { required: true, message: '请输入参考价格', trigger: 'blur' }
     ]
 }
 
@@ -486,6 +363,12 @@ onMounted(() => {
     fetchBrands()
     fetchModels()
 })
+
+// 格式化日期
+const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    return dayjs(dateStr).format('YYYY/MM/DD HH:mm:ss')
+}
 
 // 获取品牌列表
 const fetchBrands = async () => {
@@ -616,7 +499,7 @@ const handleAddBrand = () => {
 const handleEditBrand = (row) => {
     isEditBrand.value = true
     // 填充表单数据
-    Object.assign(brandForm, {...row})
+    Object.assign(brandForm, { ...row })
     brandDialogVisible.value = true
 }
 
@@ -917,4 +800,4 @@ const submitModelForm = () => {
 .form-col {
     flex: 1;
 }
-</style> 
+</style>

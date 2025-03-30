@@ -54,7 +54,11 @@
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="评论时间" width="160" />
+        <el-table-column prop="createTime" label="评论时间" width="160" >
+          <template #default="scope">
+            {{ formatDate(scope.row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="100" align="center">
           <template #default="scope">
             <el-tag type="success" v-if="scope.row.status === 'approved'">已通过</el-tag>
@@ -129,7 +133,7 @@
           <el-descriptions-item label="评论内容">
             <div class="comment-content">{{ currentComment.content }}</div>
           </el-descriptions-item>
-          <el-descriptions-item label="评论时间">{{ currentComment.createTime }}</el-descriptions-item>
+          <el-descriptions-item label="评论时间">{{ formatDate(currentComment.createTime) }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag type="success" v-if="currentComment.status === 'approved'">已通过</el-tag>
             <el-tag type="warning" v-else-if="currentComment.status === 'pending'">待审核</el-tag>
@@ -195,6 +199,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import adminApi from '@/api/modules/admin'
+import { format } from 'echarts'
+import dayjs from 'dayjs'
 
 // 路由
 const router = useRouter()
@@ -223,6 +229,12 @@ const commentToReject = ref(null)
 onMounted(() => {
   fetchComments()
 })
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY/MM/DD HH:mm:ss')
+}
 
 // 获取评论列表
 const fetchComments = async () => {

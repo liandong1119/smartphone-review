@@ -14,7 +14,7 @@
                         <div class="username clickable-username" @click="navigateToUserProfile(reviewDetail.userId)">
                             {{ reviewDetail.username }}
                         </div>
-                        <div class="post-time">{{ reviewDetail.createTime }}</div>
+                        <div class="post-time">{{ formatDate(reviewDetail.createTime) }}</div>
                     </div>
                 </div>
 
@@ -204,7 +204,7 @@
                                 </div>
                                 <div class="comment-content">{{ comment.content }}</div>
                                 <div class="comment-actions">
-                                    <span class="comment-time">{{ comment.createTime || '刚刚' }}</span>
+                                    <span class="comment-time">{{ formatDate(comment.createTime) || '刚刚' }}</span>
                                     <span class="reply-btn" @click="replyToComment(comment, index)">回复</span>
                                     <span class="like-button" :class="{ 'liked': comment.isLiked }"
                                           @click="toggleCommentLike(comment)">
@@ -235,7 +235,7 @@
                                     </div>
                                     <div class="reply-content">{{ reply.content }}</div>
                                     <div class="reply-actions">
-                                        <span class="comment-time">{{ reply.createTime || '刚刚' }}</span>
+                                        <span class="comment-time">{{ formatDate(reply.createTime) || '刚刚' }}</span>
                                         <span class="reply-btn" @click="replyToReply(comment, reply, index)">回复</span>
                                         <span class="like-button" :class="{ 'liked': reply.isLiked }"
                                               @click="toggleReplyLike(reply)">
@@ -303,6 +303,7 @@ import {ElMessage, ElMessageBox} from 'element-plus'
 import {usePostStore} from '@/stores/post'
 import {useUserStore} from '@/stores/user'
 import commentApi from '@/api/modules/comment'
+import dayjs from 'dayjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -365,7 +366,11 @@ const toggleLike = async () => {
 
     await postStore.toggleLike(reviewDetail.value)
 }
-
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY年MM月DD日 HH:mm:ss')
+}
 // 收藏评测
 const toggleFavorite = async () => {
     if (!userStore.isLoggedIn) {

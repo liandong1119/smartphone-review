@@ -1,25 +1,5 @@
 <template>
   <div class="home-container">
-    <!-- 过滤栏
-    <div class="filter-bar">
-      <div class="filter-section">
-        <el-radio-group v-model="currentFilter" size="small">
-          <el-radio-button label="all">全部</el-radio-button>
-          <el-radio-button label="followed">关注</el-radio-button>
-          <el-radio-button label="recommend">推荐</el-radio-button>
-        </el-radio-group>
-      </div>
-      <div class="search-section">
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索评测内容..."
-          prefix-icon="Search"
-          clearable
-          size="small"
-          @keyup.enter="searchPosts"
-        />
-      </div>
-    </div> -->
 
     <!-- 内容卡片列表 -->
     <div class="content-list">
@@ -41,7 +21,7 @@
             <el-avatar :size="36" :src="post.userAvatar" @click="goToUserProfile(post)" class="clickable-avatar"></el-avatar>
             <div class="user-meta">
               <span class="username clickable-username" @click="goToUserProfile(post)">{{ post.nickname }}</span>
-              <span class="datetime">{{ post.createTime }}</span>
+              <span class="datetime">{{ formatDate(post.createTime) }}</span>
             </div>
           </div>
           
@@ -116,7 +96,7 @@
             <div v-for="comment in post.commentList" :key="comment.id" class="comment-item">
               <span class="comment-user">{{ comment.username }}:</span>
               <span class="comment-content">{{ comment.content }}</span>
-              <span class="comment-time">{{ comment.createTime }}</span>
+              <span class="comment-time">{{ formatDate(comment.createTime )}}</span>
             </div>
           </div>
           <div v-else class="no-comments">
@@ -162,6 +142,7 @@ import { useRouter } from 'vue-router'
 import { usePostStore } from '@/stores/post'
 import { useUserStore } from '@/stores/user'
 import commentApi from '@/api/modules/comment'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const postStore = usePostStore()
@@ -373,6 +354,12 @@ const addComment = async (post) => {
     console.error('Failed to add comment:', error)
     ElMessage.error('评论发表失败')
   }
+}
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY年MM月DD日 HH:mm:ss')
 }
 
 // 查看大图

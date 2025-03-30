@@ -102,6 +102,7 @@ import { View, ChatLineRound, Star, StarFilled, CaretTop } from '@element-plus/i
 import instance from '@/utils/http'
 import { useUserStore } from '@/stores/user'
 import postApi from '@/api/modules/post'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -279,12 +280,7 @@ const viewDetail = (id) => {
 // 格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  return dayjs(dateStr).format('YYYY年MM月DD日 HH:mm:ss')
 }
 
 // 处理分页大小变化

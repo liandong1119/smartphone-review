@@ -110,7 +110,7 @@
                   <el-tag v-if="announcement.isTop" size="small" type="danger">置顶</el-tag>
                   {{ announcement.title }}
                 </div>
-                <div class="announcement-time">{{ formatDate(announcement.createTime) }}</div>
+                <div class="announcement-time">{{ formatDate(announcement.publishTime) }}</div>
               </div>
             </div>
           </template>
@@ -128,7 +128,7 @@
           
           <!-- 添加个性签名 -->
           <div class="user-signature" v-if="isLoggedIn">
-              {{ bio }}
+              "{{ bio }}"
           </div>
           
           <!-- 添加用户统计信息 -->
@@ -184,6 +184,7 @@ import { ElMessage } from 'element-plus'
 import NotificationCenter from '@/components/NotificationCenter.vue'
 import { useUserStore } from '@/stores/user'
 import announcementApi from '@/api/modules/announcement'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const route = useRoute()
@@ -198,7 +199,7 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const username = computed(() => userStore.userInfo?.username || '用户')
 const userAvatar = computed(() => userStore.userInfo?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
 const isAdmin = computed(() => userStore.isAdmin)
-const registeTime = computed(() => userStore.userInfo?.createTime)
+const registeTime = computed(() => formatDate(userStore.userInfo?.createTime))
 const bio = computed (() => userStore.userInfo?.bio)
 // 获取当前激活的菜单项
 const activeMenu = computed(() => {
@@ -224,7 +225,7 @@ const displayAnnouncements = computed(() => {
       return a.isTop ? -1 : 1
     }
     // 然后按创建时间排序（新的在前）
-    return new Date(b.createTime) - new Date(a.createTime)
+    return new Date(b.publishTime) - new Date(a.publishTime)
   })
   
   // 只返回前2条
@@ -248,8 +249,7 @@ const fetchAnnouncements = async () => {
 // 格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN')
+  return dayjs(dateStr).format('YYYY年MM月DD日 HH:mm:ss')
 }
 
 onMounted(() => {

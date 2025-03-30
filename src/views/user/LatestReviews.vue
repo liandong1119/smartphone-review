@@ -107,6 +107,7 @@ import {ElMessage} from 'element-plus'
 import {View, ChatLineRound, Star, StarFilled, CaretTop} from '@element-plus/icons-vue'
 import instance from '@/utils/http'
 import {useUserStore} from '@/stores/user'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -293,13 +294,8 @@ const truncateText = (text, length) => {
 
 // 格式化日期
 const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    })
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY年MM月DD日 HH:mm:ss')
 }
 
 // 页面加载时获取数据

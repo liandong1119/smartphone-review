@@ -57,7 +57,11 @@
                         {{ scope.row.brand }} / {{ scope.row.phoneModel }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="createTime" label="发布时间" min-width="160"/>
+                <el-table-column prop="createTime" label="发布时间" min-width="160">
+                    <template #default="scope">
+                        {{ formatDate(scope.row.createTime) }}
+                    </template>
+                </el-table-column>
                 <el-table-column label="状态" width="100">
                     <template #default="scope">
                         <el-tag type="success" v-if="scope.row.status === 1">正常</el-tag>
@@ -140,7 +144,7 @@
                         <span>{{ currentPost.username }}</span>
                     </div>
                     <div class="post-info">
-                        <span>发布时间: {{ currentPost.createTime }}</span>
+                        <span>发布时间: {{ formatDate(currentPost.createTime) }}</span>
                         <span>手机型号: {{ currentPost.brand }} / {{ currentPost.phoneModel }}</span>
                     </div>
                 </div>
@@ -172,7 +176,11 @@
                             </template>
                         </el-table-column>
                         <el-table-column prop="content" label="评论内容" min-width="200"/>
-                        <el-table-column prop="createTime" label="评论时间" width="160"/>
+                        <el-table-column prop="createTime" label="评论时间" width="160">
+                            <template #default="scope">
+                                {{ formatDate(scope.row.createTime) }}
+                            </template>
+                        </el-table-column>
                         <el-table-column label="操作" width="120">
                             <template #default="scope">
                                 <el-button
@@ -205,6 +213,8 @@ import {ElMessage, ElMessageBox} from 'element-plus'
 import {Search, View, Star, ChatLineRound} from '@element-plus/icons-vue'
 import adminApi from '@/api/modules/admin'
 import {useRouter} from 'vue-router'
+import { format } from 'echarts'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 
@@ -228,6 +238,12 @@ const currentPost = ref(null)
 onMounted(() => {
     fetchPosts()
 })
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY/MM/DD HH:mm:ss')
+}
 
 // 获取帖子列表
 const fetchPosts = async () => {

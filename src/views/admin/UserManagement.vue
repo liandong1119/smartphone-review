@@ -45,7 +45,11 @@
             <el-tag v-else>普通用户</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="注册时间" min-width="160" />
+        <el-table-column prop="createTime" label="注册时间" min-width="160" >
+          <template #default="scope">
+            {{ formatDate(scope.row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="scope">
             <el-switch
@@ -177,6 +181,7 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
 import adminApi from '@/api/modules/admin'
+import dayjs from 'dayjs'
 
 // 用户数据列表
 const userList = ref([])
@@ -392,6 +397,12 @@ const submitForm = async () => {
       }
     }
   })
+}
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY/MM/DD HH:mm:ss')
 }
 
 // 处理禁言状态变化

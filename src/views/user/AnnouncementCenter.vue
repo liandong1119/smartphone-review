@@ -36,6 +36,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Clock } from '@element-plus/icons-vue'
 import announcementApi from '@/api/modules/announcement'
+import dayjs from 'dayjs'
 
 // 状态变量
 const loading = ref(true)
@@ -70,16 +71,10 @@ const fetchAnnouncements = async () => {
 }
 
 // 格式化日期
+// 格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return dayjs(dateStr).format('YYYY-MM-DD HH:mm:ss')
 }
 
 // 在组件挂载时获取数据

@@ -38,10 +38,14 @@
             <span v-html="previewContent(scope.row.content)"></span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160" />
+        <el-table-column prop="createTime" label="创建时间" width="160" >
+          <template #default="scope">
+            {{ formatDate(scope.row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="publishTime" label="发布时间" width="160">
           <template #default="scope">
-            {{ scope.row.publishTime || '未发布' }}
+            {{ formatDate(scope.row.publishTime) || '未发布' }}
           </template>
         </el-table-column>
         <el-table-column label="状态" width="100" align="center">
@@ -199,6 +203,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
 import adminApi from '@/api/modules/admin'
+import dayjs from 'dayjs'
 
 // 公告数据列表
 const announcementList = ref([])
@@ -261,6 +266,12 @@ const announcementFormRules = {
 onMounted(() => {
   fetchAnnouncements()
 })
+
+// 格式化日期
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY/MM/DD HH:mm:ss')
+}
 
 // 获取公告列表
 const fetchAnnouncements = async () => {

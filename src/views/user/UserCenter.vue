@@ -166,7 +166,7 @@
               </div>
             </el-tab-pane>
             
-            <el-tab-pane label="收藏手机" name="favorite-phones">
+            <!-- <el-tab-pane label="收藏手机" name="favorite-phones">
               <div class="empty-placeholder" v-if="favoritePhones.length === 0">
                 <el-empty description="暂无收藏的手机型号" />
               </div>
@@ -194,7 +194,7 @@
                   :total="totalFavoritePhones"
                 />
               </div>
-            </el-tab-pane>
+            </el-tab-pane> -->
             
             <el-tab-pane label="账户安全" name="security">
               <div class="security-section">
@@ -307,9 +307,10 @@
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>-->
         </el-form-item>
-        <el-form-item label="个人简介">
+        <el-form-item label="个性签名">
           <el-input
             v-model="profileForm.bio"
+            placeholder="请输入个性签名,展示更好的自己"
             type="textarea"
             rows="4"
             maxlength="200"

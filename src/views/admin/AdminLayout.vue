@@ -140,6 +140,7 @@ onMounted(() => {
   const user = localStorage.getItem('user')
   if (user) {
     const userInfo = JSON.parse(user)
+    console.log(userInfo)
     if (userInfo.role === 'admin') {
       adminName.value = userInfo.username || '管理员'
       adminAvatar.value = userInfo.avatar || ''
