@@ -128,7 +128,7 @@
             :show-file-list="false"
             :before-upload="beforeAvatarUpload"
           >
-            <img v-if="profileForm.avatarUrl" :src="profileForm.avatarUrl" class="avatar-image" />
+            <img v-if="profileForm.avatar" :src="profileForm.avatar" class="avatar-image" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
         </el-form-item>

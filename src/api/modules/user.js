@@ -81,7 +81,7 @@ const userApi = {
   // 获取当前用户的收藏列表
   getUserFavorites(params) {
     const { type = 'post' } = params || {};
-    return instance.get(`/user/favorites?type=${type}`);
+    return instance.get(`/posts/user/favorites`);
   },
   
   // 添加或移除收藏

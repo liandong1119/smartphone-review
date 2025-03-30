@@ -656,7 +656,7 @@ const handleDeleteBrand = (row) => {
 }
 
 // 品牌Logo变更
-const handleBrandLogoChange = async (file) => {
+const handleAvatarChange = async (file) => {
     // 在实际应用中，应该上传图片到服务器并获取URL
     brandForm.logo = await uploadApi.uploadImages(file.raw)
 }

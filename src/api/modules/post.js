@@ -9,7 +9,7 @@ const postApi = {
   
   // 获取推荐评测
   getRecommendPosts(params) {
-    return instance.get('/posts/recommend', { params });
+    return instance.get('/posts/recommend',  params );
   },
   
   // 获取评测详情

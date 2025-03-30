@@ -91,7 +91,7 @@
               >
                 <el-icon><CaretTop /></el-icon>
               </el-button>
-              <span>{{ post.likes || 0 }}</span>
+              <span>{{ post.likeCount || 0 }}</span>
             </span>
             <span class="stat-item">
               <el-button 
@@ -105,7 +105,7 @@
                   <star v-else />
                 </el-icon>
               </el-button>
-              <span>{{ post.favorites || 0 }}</span>
+              <span>{{ post.favoriteCount || 0 }}</span>
             </span>
           </div>
         </div>
@@ -198,7 +198,7 @@ const handleFilterChange = (filter) => {
 // 初始化方法
 const initPage = async () => {
   // 初始化点赞和收藏状态
-  postStore.initLikesAndFavorites()
+  // postStore.initLikesAndFavorites()
   
   // 获取评测列表
   await fetchPosts()

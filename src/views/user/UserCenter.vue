@@ -142,7 +142,7 @@
               <el-row v-else :gutter="20" class="favorites-grid">
                 <el-col :xs="24" :sm="12" :md="8" v-for="item in userFavorites" :key="item.id">
                   <el-card class="favorite-card" shadow="hover" @click="viewReview(item)">
-                    <img :src="item.cover" class="favorite-image" />
+                    <img :src="item.fileList!=null?item.fileList[0]:''" class="favorite-image" />
                     <div class="favorite-info">
                       <div class="favorite-title">{{ item.title }}</div>
                       <div class="favorite-meta">
@@ -285,16 +285,27 @@
           <el-input v-model="profileForm.username" />
         </el-form-item>
         <el-form-item label="头像">
-          <el-upload
+            <el-upload
+                    class="avatar-uploader"
+                    :show-file-list="false"
+                    :auto-upload="false"
+                    :on-change="handleAvatarChange"
+            >
+                <img v-if="profileForm.avatar" :src="profileForm.avatar" class="avatar"/>
+                <el-icon v-else class="avatar-uploader-icon">
+                    <Plus/>
+                </el-icon>
+            </el-upload>
+<!--          <el-upload
             class="avatar-uploader"
             action="#"
             :http-request="uploadAvatar"
             :show-file-list="false"
             :before-upload="beforeAvatarUpload"
           >
-            <img v-if="profileForm.avatarUrl" :src="profileForm.avatarUrl" class="avatar-image" />
+            <img v-if="profileForm.avatar" :src="profileForm.avatar" class="avatar-image" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
-          </el-upload>
+          </el-upload>-->
         </el-form-item>
         <el-form-item label="个人简介">
           <el-input
@@ -414,6 +425,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { createRules, validateEmail, validateMobile, validatePassword, validateConfirmPassword } from '@/utils/validate'
 import userApi from '@/api/modules/user'
 import phoneApi from '@/api/modules/phone'
+import {uploadApi} from "@/api/index.js";
 
 const router = useRouter()
 const activeTab = ref('reviews')
@@ -451,7 +463,7 @@ const userStats = ref({
 // 个人资料表单
 const profileForm = ref({
   username: '',
-  avatarUrl: '',
+  avatar: '',
   bio: ''
 })
 
@@ -478,6 +490,16 @@ const favoritePhonePage = ref(1)
 const favoritePhonePageSize = ref(6)
 const favoritePhones = ref([])
 const totalFavoritePhones = ref(0)
+
+
+
+// 头像变更
+const handleAvatarChange = async (file) => {
+    // 在实际应用中，应该上传图片到服务器并获取URL
+    profileForm.value.avatar = await uploadApi.uploadImages(file.raw)
+    console.log("头像地址：：",profileForm.avatar)
+    file.url = profileForm.avatar
+}
 
 // 修改密码表单
 const passwordForm = ref({
@@ -645,11 +667,11 @@ const fetchUserComments = async () => {
 const fetchUserFavorites = async () => {
   try {
     console.log('开始获取用户收藏列表');
-    const response = await userApi.getUserFavorites({
+    let response = await userApi.getUserFavorites({
       type: 'post'
     });
     console.log('用户收藏API响应:', response);
-    
+    response = response.records;
     if (response && Array.isArray(response)) {
       // 直接是数组形式
       userFavorites.value = response;
@@ -821,17 +843,19 @@ const deleteComment = (comment) => {
 const editProfile = () => {
   profileForm.value = {
     username: userInfo.value.username,
-    avatarUrl: userInfo.value.avatar,
+    avatar: userInfo.value.avatar,
     bio: userInfo.value.bio
   }
   profileDialogVisible.value = true
 }
 
 // 保存个人资料
-const saveProfile = () => {
+const saveProfile = async () => {
+
+    await userApi.updateUserInfo(profileForm.value)
   // 模拟保存操作
   userInfo.value.username = profileForm.value.username
-  userInfo.value.avatar = profileForm.value.avatarUrl
+  userInfo.value.avatar = profileForm.value.avatar
   userInfo.value.bio = profileForm.value.bio
   
   ElMessage.success('个人资料已更新')
@@ -859,7 +883,7 @@ const uploadAvatar = (options) => {
   const reader = new FileReader()
   reader.readAsDataURL(options.file)
   reader.onload = () => {
-    profileForm.value.avatarUrl = reader.result
+    profileForm.value.avatar = reader.result
     options.onSuccess()
   }
 }

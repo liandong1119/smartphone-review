@@ -64,11 +64,11 @@ export const usePostStore = defineStore('post', () => {
         postList.value = result.records || result
         total.value = result.total || result.length
         
-        // 更新点赞和收藏状态
-        postList.value.forEach(post => {
-          post.isLiked = !!likedPosts.value[post.id]
-          post.isFavorited = !!favoritedPosts.value[post.id]
-        })
+        // // 更新点赞和收藏状态
+        // postList.value.forEach(post => {
+        //   post.isLiked = !!likedPosts.value[post.id]
+        //   post.isFavorited = !!favoritedPosts.value[post.id]
+        // })
         
         console.log('Processed posts:', postList.value.slice(0, 2))
       }
@@ -232,13 +232,13 @@ export const usePostStore = defineStore('post', () => {
     if (!post) return false
     
     try {
-      const isLiked = !!likedPosts.value[post.id]
+      const isLiked = post.isLiked
       
       if (isLiked) {
         // 取消点赞
         await postApi.unlikePost(post.id)
         delete likedPosts.value[post.id]
-        if (post.likes > 0) post.likes--
+        if (post.likeCount > 0) post.likeCount--
         post.isLiked = false
         ElMessage({
           message: '已取消点赞',
@@ -249,7 +249,7 @@ export const usePostStore = defineStore('post', () => {
         // 点赞
         await postApi.likePost(post.id)
         likedPosts.value[post.id] = true
-        post.likes++
+        post.likeCount++
         post.isLiked = true
         ElMessage({
           message: '点赞成功',
@@ -273,13 +273,13 @@ export const usePostStore = defineStore('post', () => {
     if (!post) return false
     
     try {
-      const isFavorited = !!favoritedPosts.value[post.id]
+      const isFavorited = post.isFavorited
       
       if (isFavorited) {
         // 取消收藏
         await postApi.unfavoritePost(post.id)
         delete favoritedPosts.value[post.id]
-        if (post.favorites > 0) post.favorites--
+        if (post.favoriteCount > 0) post.favoriteCount--
         post.isFavorited = false
         ElMessage({
           message: '已取消收藏',
@@ -290,7 +290,7 @@ export const usePostStore = defineStore('post', () => {
         // 收藏
         await postApi.favoritePost(post.id)
         favoritedPosts.value[post.id] = true
-        post.favorites = (post.favorites || 0) + 1
+        post.favoriteCount = (post.favoriteCount || 0) + 1
         post.isFavorited = true
         ElMessage({
           message: '收藏成功',
