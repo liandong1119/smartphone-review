@@ -61,7 +61,11 @@
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column prop="createTime" label="发布时间" width="180" sortable />
+                <el-table-column prop="createTime" label="发布时间" width="180" sortable >
+                  <template #default="scope">
+                    {{ formatDate(scope.row.createTime) }}
+                  </template>
+                  </el-table-column>
                 <el-table-column prop="views" label="阅读量" width="100" sortable />
                 <el-table-column prop="likeCount" label="点赞数" width="100" sortable />
                 <el-table-column prop="comments" label="评论数" width="100" sortable />
@@ -107,7 +111,7 @@
                   <div class="comment-header">
                     <div class="comment-meta">
                       <span class="comment-review" @click="viewComment(comment)" style="cursor: pointer; color: #409EFF;">《{{ comment.postTitle }}》</span>
-                      <span class="comment-time">{{ comment.createTime }}</span>
+                      <span class="comment-time">{{ formatDate(comment.createTime )}}</span>
                     </div>
                     <div class="comment-actions">
                       <el-button size="small" type="text" @click="editComment(comment)">
@@ -147,7 +151,7 @@
                       <div class="favorite-title">{{ item.title }}</div>
                       <div class="favorite-meta">
                         <span>{{ item.author }}</span>
-                        <span>{{ item.collectTime }}</span>
+                        <span>{{ formatDate(item.collectTime) }}</span>
                       </div>
                     </div>
                   </el-card>
@@ -429,6 +433,7 @@ import phoneApi from '@/api/modules/phone'
 import {uploadApi} from "@/api/index.js";
 import {useUserStore} from "../../stores/user.js";
 import instance from "../../utils/http.js";
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const activeTab = ref('reviews')
@@ -494,7 +499,10 @@ const favoritePhonePageSize = ref(6)
 const favoritePhones = ref([])
 const totalFavoritePhones = ref(0)
 
-
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY年MM月DD日 HH:mm:ss')
+}
 
 // 头像变更
 const handleAvatarChange = async (file) => {

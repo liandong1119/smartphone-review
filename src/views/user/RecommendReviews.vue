@@ -48,7 +48,7 @@
               >
                 <el-icon><CaretTop /></el-icon>
               </el-button>
-              <span>{{ post.likes || 0 }}</span>
+              <span>{{ post.likeCount || post.likes || 0 }}</span>
             </div>
             <div class="interaction-item">
               <el-button 
@@ -62,7 +62,7 @@
                   <star v-else />
                 </el-icon>
               </el-button>
-              <span>{{ post.favorites || 0 }}</span>
+              <span>{{ post.favoriteCount || post.favorites || 0 }}</span>
             </div>
             <div class="interaction-item" @click="viewDetail(post.id)">
               <el-button size="small" circle>
@@ -101,11 +101,13 @@ import { ElMessage } from 'element-plus'
 import { View, ChatLineRound, Star, StarFilled, CaretTop } from '@element-plus/icons-vue'
 import instance from '@/utils/http'
 import { useUserStore } from '@/stores/user'
+import { usePostStore } from '@/stores/post'
 import postApi from '@/api/modules/post'
 import dayjs from 'dayjs'
 
 const router = useRouter()
 const userStore = useUserStore()
+const postStore = usePostStore()
 
 // 用户登录状态
 const isLoggedIn = computed(() => userStore.isLoggedIn)
@@ -176,31 +178,16 @@ const fetchRecommendReviews = async () => {
 // 初始化交互状态
 const initInteractionStates = () => {
   try {
-    // 从localStorage获取数据，确保是数组格式
-    const likedPostsStr = localStorage.getItem('likedPosts')
-    const favoritedPostsStr = localStorage.getItem('favoritedPosts')
-    
-    const likedPosts = likedPostsStr ? JSON.parse(likedPostsStr) : []
-    const favoritedPosts = favoritedPostsStr ? JSON.parse(favoritedPostsStr) : []
-    
-    // 确保数据是数组
-    if (!Array.isArray(likedPosts)) {
-      localStorage.setItem('likedPosts', '[]')
-    }
-    if (!Array.isArray(favoritedPosts)) {
-      localStorage.setItem('favoritedPosts', '[]')
-    }
+    // 使用postStore初始化点赞和收藏状态
+    postStore.initLikesAndFavorites()
     
     // 更新帖子的交互状态
     posts.value.forEach(post => {
-      post.isLiked = Array.isArray(likedPosts) && likedPosts.includes(post.id)
-      post.isFavorited = Array.isArray(favoritedPosts) && favoritedPosts.includes(post.id)
+      post.isLiked = !!postStore.likedPosts[post.id]
+      post.isFavorited = !!postStore.favoritedPosts[post.id]
     })
   } catch (error) {
     console.error('初始化交互状态失败:', error)
-    // 如果出错，重置localStorage
-    localStorage.setItem('likedPosts', '[]')
-    localStorage.setItem('favoritedPosts', '[]')
   }
 }
 
@@ -211,31 +198,8 @@ const toggleLike = async (post) => {
     return
   }
   
-  try {
-    const response = await instance.post(`/posts/${post.id}/like`)
-    if (response && (response.success || response.code === 200)) {
-      post.isLiked = !post.isLiked
-      post.likes = post.isLiked ? (post.likes || 0) + 1 : (post.likes || 1) - 1
-      
-      // 更新localStorage
-      const likedPostsStr = localStorage.getItem('likedPosts')
-      let likedPosts = likedPostsStr ? JSON.parse(likedPostsStr) : []
-      
-      if (post.isLiked) {
-        if (!likedPosts.includes(post.id)) {
-          likedPosts.push(post.id)
-        }
-      } else {
-        likedPosts = likedPosts.filter(id => id !== post.id)
-      }
-      
-      localStorage.setItem('likedPosts', JSON.stringify(likedPosts))
-      ElMessage.success(post.isLiked ? '点赞成功' : '已取消点赞')
-    }
-  } catch (error) {
-    console.error('点赞操作失败:', error)
-    ElMessage.error('操作失败，请重试')
-  }
+  // 使用postStore中的方法处理点赞
+  await postStore.toggleLike(post)
 }
 
 // 收藏/取消收藏
@@ -245,31 +209,8 @@ const toggleFavorite = async (post) => {
     return
   }
   
-  try {
-    const response = await instance.post(`/posts/${post.id}/favorite`)
-    if (response && (response.success || response.code === 200)) {
-      post.isFavorited = !post.isFavorited
-      post.favorites = post.isFavorited ? (post.favorites || 0) + 1 : (post.favorites || 1) - 1
-      
-      // 更新localStorage
-      const favoritedPostsStr = localStorage.getItem('favoritedPosts')
-      let favoritedPosts = favoritedPostsStr ? JSON.parse(favoritedPostsStr) : []
-      
-      if (post.isFavorited) {
-        if (!favoritedPosts.includes(post.id)) {
-          favoritedPosts.push(post.id)
-        }
-      } else {
-        favoritedPosts = favoritedPosts.filter(id => id !== post.id)
-      }
-      
-      localStorage.setItem('favoritedPosts', JSON.stringify(favoritedPosts))
-      ElMessage.success(post.isFavorited ? '收藏成功' : '已取消收藏')
-    }
-  } catch (error) {
-    console.error('收藏操作失败:', error)
-    ElMessage.error('操作失败，请重试')
-  }
+  // 使用postStore中的方法处理收藏
+  await postStore.toggleFavorite(post)
 }
 
 // 查看详情
@@ -462,6 +403,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 5px;
+}
+
+.interaction-item .el-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  overflow: hidden;
 }
 
 .pagination-container {

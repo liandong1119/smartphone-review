@@ -239,6 +239,8 @@ export const usePostStore = defineStore('post', () => {
         await postApi.unlikePost(post.id)
         delete likedPosts.value[post.id]
         if (post.likeCount > 0) post.likeCount--
+        // 兼容不同字段名
+        if (post.likes !== undefined) post.likes = post.likeCount || 0
         post.isLiked = false
         ElMessage({
           message: '已取消点赞',
@@ -249,7 +251,9 @@ export const usePostStore = defineStore('post', () => {
         // 点赞
         await postApi.likePost(post.id)
         likedPosts.value[post.id] = true
-        post.likeCount++
+        post.likeCount = (post.likeCount || 0) + 1
+        // 兼容不同字段名
+        if (post.likes !== undefined) post.likes = post.likeCount || 0
         post.isLiked = true
         ElMessage({
           message: '点赞成功',
@@ -280,6 +284,8 @@ export const usePostStore = defineStore('post', () => {
         await postApi.unfavoritePost(post.id)
         delete favoritedPosts.value[post.id]
         if (post.favoriteCount > 0) post.favoriteCount--
+        // 兼容不同字段名
+        if (post.favorites !== undefined) post.favorites = post.favoriteCount || 0
         post.isFavorited = false
         ElMessage({
           message: '已取消收藏',
@@ -291,6 +297,8 @@ export const usePostStore = defineStore('post', () => {
         await postApi.favoritePost(post.id)
         favoritedPosts.value[post.id] = true
         post.favoriteCount = (post.favoriteCount || 0) + 1
+        // 兼容不同字段名
+        if (post.favorites !== undefined) post.favorites = post.favoriteCount || 0
         post.isFavorited = true
         ElMessage({
           message: '收藏成功',
@@ -334,6 +342,8 @@ export const usePostStore = defineStore('post', () => {
     sortBy,
     sortOrder,
     displayPosts,
+    likedPosts,
+    favoritedPosts,
     initLikesAndFavorites,
     fetchPosts,
     fetchPostDetail,
@@ -347,4 +357,4 @@ export const usePostStore = defineStore('post', () => {
     setPagination,
     setSorting
   }
-}) 
+})

@@ -56,7 +56,7 @@
           <div class="post-item" v-for="post in userPosts" :key="post.id">
             <div class="post-header">
               <span class="post-title">{{ post.content.substring(0, 30) }}{{ post.content.length > 30 ? '...' : '' }}</span>
-              <span class="post-date">{{ post.createTime }}</span>
+              <span class="post-date">{{ formatDate(post.createTime  )}}</span>
             </div>
             <div class="post-preview">
               <div class="preview-image" v-if="post.fileList && post.fileList.length > 0">
@@ -158,6 +158,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { View, ChatDotRound, Star, Plus } from '@element-plus/icons-vue'
 import userApi from '../../api/modules/user'
+import dayjs from 'dayjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -180,6 +181,11 @@ const isCurrentUser = computed(() => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
   return currentUser.id === userId.value
 })
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY年MM月DD日 HH:mm:ss')
+}
 
 // 获取用户资料
 const fetchUserProfile = async () => {
