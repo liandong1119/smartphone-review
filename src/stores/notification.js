@@ -23,7 +23,7 @@ export const useNotificationStore = defineStore('notification', () => {
     try {
       loading.value = true
       const result = await notificationApi.getNotifications({
-        page: currentPage.value,
+        pageNum: currentPage.value,
         pageSize: pageSize.value,
         ...params
       })
