@@ -179,7 +179,7 @@ const handleFilterChange = (filter) => {
 // 初始化方法
 const initPage = async () => {
   // 初始化点赞和收藏状态
-  // postStore.initLikesAndFavorites()
+  postStore.initLikesAndFavorites()
   
   // 获取评测列表
   await fetchPosts()

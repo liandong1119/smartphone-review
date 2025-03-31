@@ -447,25 +447,8 @@ const toggleLike = async (review) => {
     return
   }
   
-  try {
-    const action = review.isLiked ? 'unlike' : 'like'
-    const response = await instance.post(`/posts/${review.id}/${action}`)
-    
-    if (response && response.code === 200) {
-      review.isLiked = !review.isLiked
-      review.likeCount = review.isLiked ? (review.likeCount || 0) + 1 : (review.likeCount || 1) - 1
-      ElMessage.success(review.isLiked ? '点赞成功' : '已取消点赞')
-    } else {
-      ElMessage.error('操作失败，请稍后重试')
-    }
-  } catch (error) {
-    console.error('点赞操作失败:', error)
-    
-    // 备用方案：直接更新UI状态
-    review.isLiked = !review.isLiked
-    review.likeCount = review.isLiked ? (review.likeCount || 0) + 1 : (review.likeCount || 1) - 1
-    ElMessage.success(review.isLiked ? '点赞成功' : '已取消点赞')
-  }
+  // 使用postStore中的方法处理点赞
+  await postStore.toggleLike(review)
 }
 
 // 收藏评测
@@ -1092,4 +1075,4 @@ onMounted(async () => {
   align-items: center;
   margin-bottom: 20px;
 }
-</style> 
+</style>
