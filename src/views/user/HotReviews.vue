@@ -133,8 +133,8 @@ const fetchHotReviews = async () => {
     try {
         const response = await instance.get('/posts',
             {
-                page: currentPage.value,
-                limit: pageSize.value,
+                pageNum: currentPage.value,
+                pageSize: pageSize.value,
                 sortBy: 'views',
                 sortOrder: 'desc'
 

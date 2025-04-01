@@ -317,8 +317,8 @@ const fetchPhoneReviews = async () => {
     const response = await instance.get('/posts', {
       params: {
         phoneModelId: phoneId,
-        page: currentPage.value,
-        limit: pageSize.value,
+        pageNum: currentPage.value,
+        pageSize: pageSize.value,
         status: 'published'
       }
     })

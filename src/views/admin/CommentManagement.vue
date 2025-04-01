@@ -241,7 +241,7 @@ const fetchComments = async () => {
   loading.value = true
   try {
     const response = await adminApi.getCommentList({
-      page: currentPage.value,
+      pageNum: currentPage.value,
       pageSize: pageSize.value,
       keyword: searchKeyword.value,
       status: statusFilter.value

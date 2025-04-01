@@ -131,8 +131,8 @@ const fetchLatestReviews = async () => {
         const response = await instance.get('/posts',
 
             {
-                page: currentPage.value,
-                limit: pageSize.value,
+                pageNum: currentPage.value,
+                pageSize: pageSize.value,
                 sortBy: 'createTime',
                 sortOrder: 'desc'
 

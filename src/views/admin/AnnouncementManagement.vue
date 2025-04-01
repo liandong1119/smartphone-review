@@ -278,7 +278,7 @@ const fetchAnnouncements = async () => {
   loading.value = true
   try {
     const response = await adminApi.getAnnouncementList({
-      page: currentPage.value,
+      pageNum: currentPage.value,
       pageSize: pageSize.value,
       keyword: searchKeyword.value
     })

@@ -178,8 +178,8 @@ const handleSearch = async () => {
   try {
     // 构建查询参数
     const params = {
-      page: currentPage.value,
-      limit: pageSize.value
+      pageNum: currentPage.value,
+      pageSize: pageSize.value
     }
     
     if (searchKeyword.value) {

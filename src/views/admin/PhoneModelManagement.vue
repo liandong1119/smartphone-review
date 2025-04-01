@@ -410,7 +410,7 @@ const fetchModels = async () => {
     modelLoading.value = true
     try {
         const response = await adminApi.getPhoneModelList({
-            page: modelCurrentPage.value,
+            pageNum: modelCurrentPage.value,
             pageSize: modelPageSize.value,
             keyword: modelSearchKeyword.value,
             brandId: modelFilterBrandId.value

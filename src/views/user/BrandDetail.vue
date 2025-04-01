@@ -132,7 +132,7 @@ const fetchBrandPosts = async () => {
         const response = await instance.get('/posts',
             {
                 brandId: brandId.value,
-                page: currentPage.value,
+                pageNum: currentPage.value,
                 pageSize: pageSize.value
 
             })
