@@ -36,7 +36,7 @@
                   v-for="brand in brands"
                   :key="brand.id"
                   :label="brand.name"
-                  :value="brand.id"
+                  :value="Number(brand.id)"
                 >
                   <div class="brand-option">
                     <img :src="brand.logo" :alt="brand.name" class="brand-logo" />
@@ -59,7 +59,7 @@
                   v-for="model in phoneModels"
                   :key="model.id"
                   :label="model.name"
-                  :value="model.id"
+                  :value="Number(model.id)"
                 >
                   <div class="model-option">
                     <img :src="model.image" :alt="model.name" class="model-image" />
@@ -103,6 +103,7 @@
               list-type="picture-card"
               :limit="9"
               :on-success="handleUploadSuccess"
+              :on-remove="handleRemove"
               :on-preview="handlePictureCardPreview"
               :headers="handleHeaders"
               :file-list="fileList"
@@ -199,6 +200,17 @@ const postForm = ref({
  */
 const handleUploadError = () => {
     ElMessage.error('上传失败')
+}
+
+/**
+ * 处理图片删除
+ */
+const handleImageRemove = (file,fileList) => {
+    fileList.forEach((item, index) => {
+        if (item.uid === file.uid) {
+            fileList.splice(index, 1)
+        }
+    })
 }
 
 const uploadUrl = "http://localhost:8080/api/upload/images";
@@ -350,7 +362,7 @@ const handleRemove = (file) => {
   if (index !== -1) {
     fileList.value.splice(index, 1)
   }
-  postForm.value.images = fileList.value.map(file => file.url)
+  postForm.value.fileList = fileList.value.map(file => file.url)
 }
 
 // 自动计算综合评分
