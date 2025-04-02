@@ -427,32 +427,42 @@ const handleUnpublish = (row) => {
 }
 
 // 处理删除公告
-const handleDelete = (row) => {
-  ElMessageBox.confirm(
-    `确认删除公告 "${row.title}" 吗?`,
-    '警告',
-    {
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确认删除公告 "${row.title}" 吗?`, '警告', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
-    }
-  ).then(async () => {
-    try {
-      const response = await adminApi.deleteAnnouncement(row.id)
+    })
+    
+    const response = await adminApi.deleteAnnouncement(row.id)
+    
+    if (response) {
+      ElMessage.success('公告已删除')
       
-      if (response) {
-        // 更新本地状态
-        announcementList.value = announcementList.value.filter(item => item.id !== row.id)
-        
-        ElMessage.success('删除成功')
+      // 从本地列表中移除已删除的公告
+      const index = announcementList.value.findIndex(item => item.id === row.id)
+      if (index !== -1) {
+        announcementList.value.splice(index, 1)
+        // 更新总数
+        total.value -= 1
       }
-    } catch (error) {
+      
+      // 如果当前页已经没有数据了且不是第一页，则回到上一页
+      if (announcementList.value.length === 0 && currentPage.value > 1) {
+        currentPage.value -= 1
+        fetchAnnouncements()
+      } else if (announcementList.value.length < pageSize.value && total.value > 0) {
+        // 如果当前页数据不足一页且总数大于0，重新获取当前页数据
+        fetchAnnouncements()
+      }
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
       console.error('删除公告失败:', error)
       ElMessage.error('删除公告失败')
     }
-  }).catch(() => {
-    // 用户取消删除
-  })
+  }
 }
 
 // 预览公告

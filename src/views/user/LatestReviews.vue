@@ -26,7 +26,7 @@
                     <div class="post-meta">
                         <div class="author-info" @click.stop="navigateToUserProfile(post.userId)">
                             <el-avatar :size="24" :src="post.userAvatar" class="author-avatar"/>
-                            <span class="author-name">{{ post.username }}</span>
+                            <span class="author-name">{{ post.nickname || post.username }}</span>
                         </div>
                         <div class="post-time">{{ formatDate(post.createTime) }}</div>
                     </div>
@@ -176,6 +176,14 @@ const initInteractionStates = () => {
             post.isLiked = !!postStore.likedPosts[post.id]
             post.isFavorited = !!postStore.favoritedPosts[post.id]
         })
+
+        // 处理用户相关字段
+        if (post.user) {
+          post.username = post.user.username
+          post.nickname = post.user.nickname
+          post.userAvatar = post.user.avatar
+          post.userId = post.user.id
+        }
     } catch (error) {
         console.error('初始化交互状态失败:', error)
     }

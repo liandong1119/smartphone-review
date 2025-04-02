@@ -14,7 +14,7 @@
             <el-avatar :size="100" :src="userProfile.avatar" />
           </div>
           <div class="user-info">
-            <h2 class="username">{{ userProfile.username }}</h2>
+            <h2 class="username">{{ userProfile.nickname || userProfile.username }}</h2>
             <p class="user-bio">{{ userProfile.bio || '这个人很懒，还没有填写个人简介' }}</p>
             <div class="user-stats">
               <div class="stat-item">

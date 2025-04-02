@@ -334,7 +334,7 @@ const modelForm = reactive({
     id: '',
     brandId: '',
     name: '',
-    release: '',
+    releaseDate: '',
     price: 0,
     image: '',
     description: '',
@@ -350,7 +350,7 @@ const modelFormRules = {
         { required: true, message: '请输入型号名称', trigger: 'blur' },
         { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
     ],
-    release: [
+    releaseDate: [
         { required: true, message: '请选择发布日期', trigger: 'change' }
     ],
     price: [
@@ -511,31 +511,46 @@ const handleManageModels = (row) => {
 }
 
 // 删除品牌
-const handleDeleteBrand = (row) => {
-    ElMessageBox.confirm(
-        `确认删除品牌 "${row.name}" 吗? 删除后其关联的所有型号也将被删除。`,
-        '警告',
-        {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-        }
-    ).then(async () => {
-        try {
-            // 通过API删除品牌
-            const response = await adminApi.deleteBrand(row.id)
-
-            if (response) {
-                ElMessage.success('删除成功')
-                fetchBrands() // 刷新列表
+const handleDeleteBrand = async (row) => {
+    try {
+        await ElMessageBox.confirm(
+            `确定要删除品牌 "${row.name}" 吗？删除后将同时删除该品牌下的所有型号！`,
+            '警告',
+            {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
             }
-        } catch (error) {
+        )
+        
+        const response = await adminApi.deleteBrand(row.id)
+        
+        if (response) {
+            ElMessage.success('品牌已删除')
+            
+            // 从本地列表中移除已删除的品牌
+            const index = brandList.value.findIndex(item => item.id === row.id)
+            if (index !== -1) {
+                brandList.value.splice(index, 1)
+                // 更新总数
+                brandTotal.value -= 1
+            }
+            
+            // 如果当前页已经没有数据了且不是第一页，则回到上一页
+            if (brandList.value.length === 0 && brandCurrentPage.value > 1) {
+                brandCurrentPage.value -= 1
+                fetchBrands()
+            } else if (brandList.value.length < brandPageSize.value && brandTotal.value > 0) {
+                // 如果当前页数据不足一页且总数大于0，重新获取当前页数据
+                fetchBrands()
+            }
+        }
+    } catch (error) {
+        if (error !== 'cancel') {
             console.error('删除品牌失败:', error)
             ElMessage.error('删除品牌失败')
         }
-    }).catch(() => {
-        // 用户取消删除
-    })
+    }
 }
 
 // 品牌Logo变更
@@ -648,31 +663,46 @@ const handleEditModel = (row) => {
 }
 
 // 删除型号
-const handleDeleteModel = (row) => {
-    ElMessageBox.confirm(
-        `确认删除型号 "${row.name}" 吗?`,
-        '警告',
-        {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-        }
-    ).then(async () => {
-        try {
-            // 通过API删除型号
-            const response = await adminApi.deletePhoneModel(row.id)
-
-            if (response) {
-                ElMessage.success('删除成功')
-                fetchModels() // 刷新列表
+const handleDeleteModel = async (row) => {
+    try {
+        await ElMessageBox.confirm(
+            `确定要删除手机型号 "${row.name}" 吗？删除后不可恢复！`,
+            '警告',
+            {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
             }
-        } catch (error) {
-            console.error('删除型号失败:', error)
-            ElMessage.error('删除型号失败')
+        )
+        
+        const response = await adminApi.deletePhoneModel(row.id)
+        
+        if (response) {
+            ElMessage.success('手机型号已删除')
+            
+            // 从本地列表中移除已删除的型号
+            const index = modelList.value.findIndex(item => item.id === row.id)
+            if (index !== -1) {
+                modelList.value.splice(index, 1)
+                // 更新总数
+                modelTotal.value -= 1
+            }
+            
+            // 如果当前页已经没有数据了且不是第一页，则回到上一页
+            if (modelList.value.length === 0 && modelCurrentPage.value > 1) {
+                modelCurrentPage.value -= 1
+                fetchModels()
+            } else if (modelList.value.length < modelPageSize.value && modelTotal.value > 0) {
+                // 如果当前页数据不足一页且总数大于0，重新获取当前页数据
+                fetchModels()
+            }
         }
-    }).catch(() => {
-        // 用户取消删除
-    })
+    } catch (error) {
+        if (error !== 'cancel') {
+            console.error('删除手机型号失败:', error)
+            ElMessage.error('删除手机型号失败')
+        }
+    }
 }
 
 // 型号图片变更

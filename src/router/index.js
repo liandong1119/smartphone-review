@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { updateAllPostsState } from '../utils/init'
 
 // 用户端组件
 const UserLayout = () => import('../views/user/UserLayout.vue')
@@ -234,6 +235,17 @@ router.beforeEach((to, from, next) => {
   }
   
   next();
+})
+
+// 全局后置钩子
+router.afterEach((to, from) => {
+  // 在每次路由切换完成后更新所有文章的点赞收藏状态
+  if (to.name !== from.name || to.params.id !== from.params.id) {
+    // 确保在视图更新后执行
+    setTimeout(() => {
+      updateAllPostsState()
+    }, 100)
+  }
 })
 
 export default router

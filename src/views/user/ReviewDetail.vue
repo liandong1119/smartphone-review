@@ -12,7 +12,7 @@
                     ></el-avatar>
                     <div class="user-meta">
                         <div class="username clickable-username" @click="navigateToUserProfile(reviewDetail.userId)">
-                            {{ reviewDetail.username }}
+                            {{ reviewDetail.nickname || reviewDetail.username }}
                         </div>
                         <div class="post-time">{{ formatDate(reviewDetail.createTime) }}</div>
                     </div>
@@ -200,7 +200,7 @@
                             ></el-avatar>
                             <div class="comment-content-wrapper">
                                 <div class="comment-user clickable-username"
-                                     @click="navigateToUserProfile(comment.userId)">{{ comment.username }}
+                                     @click="navigateToUserProfile(comment.userId)">{{ comment.nickname || comment.username }}
                                 </div>
                                 <div class="comment-content">{{ comment.content }}</div>
                                 <div class="comment-actions">
@@ -227,10 +227,10 @@
                                 <div class="reply-content-wrapper">
                                     <div class="reply-user">
                                         <span @click="navigateToUserProfile(reply.userId)"
-                                              class="clickable-username">{{ reply.username }}</span>
+                                              class="clickable-username">{{ reply.nickname || reply.username }}</span>
                                         <span class="reply-to" v-if="reply.replyTo">回复
                       <span @click="navigateToUserProfile(reply.replyToUserId)"
-                            class="clickable-username">{{ reply.replyTo }}</span>
+                            class="clickable-username">{{ reply.replyToNickname || reply.replyTo }}</span>
                     </span>
                                     </div>
                                     <div class="reply-content">{{ reply.content }}</div>
@@ -444,6 +444,7 @@ const addComment = async () => {
                 id: result.id,
                 userId: userStore.userInfo.id,
                 username: userStore.userInfo.username,
+                nickname: userStore.userInfo.nickname,
                 userAvatar: userStore.userInfo.avatar,
                 content: newComment.value,
                 createTime: new Date().toISOString(),
@@ -466,7 +467,7 @@ const addComment = async () => {
 // 回复评论
 const replyToComment = (comment, index) => {
     replyingToIndex.value = index
-    replyToUsername.value = comment.username
+    replyToUsername.value = comment.nickname || comment.username
     replyComment.value = ''
     replyingToReply.value = false
     console.log("当前要回复的评论id为： ",currentReplyToId)
@@ -519,6 +520,7 @@ const addReply = async () => {
                 id: result.id,
                 userId: userStore.userInfo?.id,
                 username: userStore.userInfo?.username,
+                nickname: userStore.userInfo?.nickname,
                 userAvatar: userStore.userInfo?.avatar,
                 content: replyComment.value,
                 createTime: new Date().toISOString(),
@@ -609,6 +611,14 @@ const sharePost = () => {
 const init = async () => {
     // 获取文章详情
     await postStore.fetchPostDetail(reviewId.value)
+    
+    // 确保点赞收藏状态正确
+    if (postStore.currentPost) {
+        isLiked.value = postStore.currentPost.isLiked || false
+        isFavorited.value = postStore.currentPost.isFavorited || false
+        likeCount.value = postStore.currentPost.likeCount || 0
+        favoriteCount.value = postStore.currentPost.favoriteCount || 0
+    }
 
     // 获取评论列表
     await fetchComments()
@@ -658,6 +668,7 @@ const getUserProfile = (userId) => {
             resolve({
                 id: userId,
                 username: '用户_' + userId,
+                nickname: '昵称_' + userId,
                 avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
                 bio: '这是用户简介',
                 followersCount: Math.floor(Math.random() * 100),
@@ -677,7 +688,7 @@ const viewImage = (imageUrl) => {
 // 回复二级评论
 const replyToReply = (comment, reply, commentIndex) => {
     replyingToIndex.value = commentIndex
-    replyToUsername.value = reply.username
+    replyToUsername.value = reply.nickname || reply.username
     replayToCommentId.value = comment.id
     replyComment.value = ''
     replyingToReply.value = true

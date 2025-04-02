@@ -27,7 +27,7 @@
                     <div class="post-meta">
                         <div class="author-info" @click.stop="navigateToUserProfile(post.userId)">
                             <el-avatar :size="24" :src="post.userAvatar" class="author-avatar"/>
-                            <span class="author-name">{{ post.username }}</span>
+                            <span class="author-name">{{ post.nickname || post.username }}</span>
                         </div>
                         <div class="post-stats hot-stats">
                             <span class="stat-item views-count"><el-icon><View/></el-icon> {{ post.views || 0 }}</span>
@@ -154,6 +154,14 @@ const fetchHotReviews = async () => {
 
         // 初始化交互状态
         initInteractionStates()
+
+        // 处理用户相关字段
+        if (post.user) {
+          post.username = post.user.username
+          post.nickname = post.user.nickname
+          post.userAvatar = post.user.avatar
+          post.userId = post.user.id
+        }
     } catch (error) {
         console.error('获取热门评测失败:', error)
         ElMessage.error('获取热门评测失败')

@@ -26,7 +26,7 @@
           <div class="post-meta">
             <div class="author-info" @click.stop="navigateToUserProfile(post.userId)">
               <el-avatar :size="24" :src="post.userAvatar" class="author-avatar" />
-              <span class="author-name">{{ post.username }}</span>
+              <span class="author-name">{{ post.nickname || post.username }}</span>
             </div>
             <div class="post-time">{{ formatDate(post.createTime) }}</div>
           </div>

@@ -94,7 +94,7 @@
         <div v-if="post.showComments" class="comments-area">
           <div v-if="post.commentList && post.commentList.length > 0" class="comment-list">
             <div v-for="comment in post.commentList" :key="comment.id" class="comment-item">
-              <span class="comment-user">{{ comment.username }}:</span>
+              <span class="comment-user">{{ comment.nickname || comment.username }}:</span>
               <span class="comment-content">{{ comment.content }}</span>
               <span class="comment-time">{{ formatDate(comment.createTime )}}</span>
             </div>

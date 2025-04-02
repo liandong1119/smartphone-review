@@ -2,7 +2,7 @@
   <div class="review-post-container">
     <div class="container">
       <div class="post-header">
-        <h1>发布手机评测</h1>
+        <h1>{{ isEditMode ? '编辑手机评测' : '发布手机评测' }}</h1>
         <p class="subtitle">分享您的使用体验和评测见解</p>
       </div>
 
@@ -98,23 +98,21 @@
 
           <el-form-item label="上传图片" prop="images">
             <el-upload
+              ref="uploadRef"
               :action="uploadUrl"
               list-type="picture-card"
               :limit="9"
               :on-success="handleUploadSuccess"
+              :on-preview="handlePictureCardPreview"
               :headers="handleHeaders"
+              :file-list="fileList"
               :error="handleUploadError"
             >
               <el-icon><Plus /></el-icon>
-<!--              <template #file="{ file }">
-                <div class="upload-item">
-                  <img class="upload-image" :src="file.url" alt="" />
-                  <div class="upload-actions">
-                    <el-icon class="upload-delete" @click.stop="handleRemove(file)"><Delete /></el-icon>
-                  </div>
-                </div>
-              </template>-->
             </el-upload>
+            <el-dialog v-model="dialogVisible">
+              <img w-full :src="dialogImageUrl" alt="预览图片" />
+            </el-dialog>
             <div class="upload-tip">上传评测时的实拍图片，最多9张</div>
           </el-form-item>
 
@@ -153,7 +151,9 @@
         </el-card>
 
         <div class="form-actions">
-          <el-button type="primary" @click="submitReview" :loading="submitting">发布评测</el-button>
+          <el-button type="primary" @click="submitReview" :loading="submitting">
+            {{ isEditMode ? '更新评测' : '发布评测' }}
+          </el-button>
           <el-button @click="resetForm">重置</el-button>
         </div>
       </el-form>
@@ -166,7 +166,16 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Plus } from '@element-plus/icons-vue'
 import instance from '@/utils/http'
-import {phoneApi} from "@/api/index.js";
+import {phoneApi} from "@/api/index.js"
+import { useRoute, useRouter } from 'vue-router'
+import { usePostStore } from '@/stores/post'
+
+// 获取路由参数
+const route = useRoute()
+const router = useRouter()
+const postStore = usePostStore()
+const isEditMode = computed(() => !!route.query.id)
+const editId = ref(route.query.id)
 
 // 表单数据
 const postFormRef = ref(null)
@@ -180,7 +189,7 @@ const postForm = ref({
   appearanceRating: 0,
   screenRating: 0,
   performanceRating: 0,
-    cameraRating: 0,
+  cameraRating: 0,
   batteryRating: 0,
   systemRating: 0
 })
@@ -189,7 +198,7 @@ const postForm = ref({
  * 图片上传出现错误
  */
 const handleUploadError = () => {
-    ElMessage.error(t('message.uploadFailed'))
+    ElMessage.error('上传失败')
 }
 
 const uploadUrl = "http://localhost:8080/api/upload/images";
@@ -202,8 +211,11 @@ const modelLoading = ref(false)
 const submitting = ref(false)
 const fileList = ref([])
 const brandsLoading = ref(false)
-const modelsLoading = ref(false
-)
+const modelsLoading = ref(false)
+const uploadRef = ref(null)
+const dialogImageUrl = ref('')
+const dialogVisible = ref(false)
+
 // 评分配置
 const colors = ['#99A9BF', '#F7BA2A', '#FF9900']
 const texts = ['失望', '一般', '满意', '推荐', '超赞']
@@ -237,13 +249,24 @@ const handleHeaders  =  {
  * @param response
  * @param uploadFile
  */
-const handleUploadSuccess = (response,uploadFile) => {
-    // 文件回填操作
-    // const {id: fileId, addr} = response.data
-    // uploadFile.fileId = fileId
-
-    postForm.value.fileList.push(response.data)
-    console.log("图片上传后： ",postForm.value.fileList)
+const handleUploadSuccess = (response, uploadFile) => {
+    // 获取上传后返回的图片URL
+    const imageUrl = response.data
+    
+    // 确保不重复添加同一URL
+    if (!postForm.value.fileList.includes(imageUrl)) {
+      postForm.value.fileList.push(imageUrl)
+    }
+    
+    console.log("图片上传后的fileList：", postForm.value.fileList)
+    
+    // 同时更新文件列表显示
+    if (uploadFile && !fileList.value.some(file => file.url === imageUrl)) {
+      fileList.value.push({
+        name: `新上传图片${fileList.value.length + 1}`,
+        url: imageUrl
+      })
+    }
 }
 
 // 获取所有品牌
@@ -255,23 +278,14 @@ const fetchBrands = async () => {
     console.log('品牌接口原始响应:', response)
     
     // 检查响应格式并处理数据
-    if (response && Array.isArray(response)) {
+    if (response ) {
       // 如果直接返回数组，说明拦截器已提取了data字段
       brands.value = response
-    } else if (response && response.data && Array.isArray(response.data)) {
-      // 如果返回的是包含data字段的对象
-      brands.value = response.data
-    } else if (response && response.code === 200 && Array.isArray(response.data)) {
-      // 直接处理API响应格式
-      brands.value = response.data
     } else {
-      // 无法识别的响应格式，使用空数组
-      console.error('无法识别的品牌数据格式:', response)
       brands.value = []
       ElMessage.warning('获取品牌数据格式异常')
     }
     
-    console.log('处理后的品牌数据:', brands.value)
   } catch (error) {
     console.error('获取品牌列表失败:', error)
     ElMessage.error('获取品牌列表失败: ' + (error.message || '未知错误'))
@@ -285,9 +299,10 @@ const fetchBrands = async () => {
 const fetchPhoneModels = async (brandId) => {
   modelsLoading.value = true
   try {
-    const response = await instance.get(`/brands/${brandId}/models`)
+    // 这里直接使用phoneApi而不是instance
+    const response = await phoneApi.getModelsByBrand(brandId)
     
-    console.log('型号接口原始响应:', response)
+    console.log(`型号接口原始响应(品牌ID: ${brandId}):`, response)
     
     // 检查响应格式并处理数据
     if (response && Array.isArray(response)) {
@@ -381,6 +396,105 @@ const calculatedRating = computed(() => {
   return avgRating;
 });
 
+// 初始化
+onMounted(async () => {
+  // 先加载品牌数据
+  await fetchBrands()
+  
+  // 如果是编辑模式，加载现有帖子数据
+  if (isEditMode.value) {
+    await loadPostData(editId.value)
+  }
+})
+
+// 加载现有帖子数据
+const loadPostData = async (postId) => {
+  try {
+    ElMessage.info('正在加载帖子数据...')
+    await postStore.fetchPostDetail(postId)
+    
+    if (postStore.currentPost) {
+      const post = postStore.currentPost
+      console.log('获取到的帖子数据:', post)
+      
+      // 填充表单数据
+      postForm.value.title = post.title || ''
+      postForm.value.content = post.content || ''
+      
+      // 更新前记录当前参数
+      console.log('从后端获取的品牌ID:', post.brandId, '类型:', typeof post.brandId)
+      console.log('从后端获取的型号ID:', post.modelId || post.phoneModelId, '类型:', typeof (post.modelId || post.phoneModelId))
+      
+      // 确保先加载品牌数据
+      await fetchBrands()
+      
+      // 设置品牌ID - 保持原始值，不进行类型转换
+      // 因为el-select组件使用的是字符串类型的ID值
+      if (post.brandId) {
+        // 直接使用原始ID，不做类型转换
+        postForm.value.brandId = post.brandId
+        console.log('设置后的品牌ID:', postForm.value.brandId, '类型:', typeof postForm.value.brandId)
+        
+        // 加载型号数据
+        await fetchPhoneModels(post.brandId)
+        
+        // 设置型号ID - 保持原始值
+        if (post.modelId || post.phoneModelId) {
+          // 直接使用原始ID，不做类型转换
+          postForm.value.phoneModelId = post.modelId || post.phoneModelId
+          console.log('设置后的型号ID:', postForm.value.phoneModelId, '类型:', typeof postForm.value.phoneModelId)
+        }
+      }
+      
+      // 打印当前状态和匹配情况
+      console.log('当前表单中的品牌ID:', postForm.value.brandId)
+      console.log('当前表单中的型号ID:', postForm.value.phoneModelId)
+      
+      // 调试：检查ID匹配情况
+      if (brands.value.length > 0) {
+        const matchedBrand = brands.value.find(brand => brand.id == postForm.value.brandId)
+        console.log('匹配的品牌:', matchedBrand ? matchedBrand.name : '未找到匹配的品牌')
+      }
+      
+      if (phoneModels.value.length > 0) {
+        const matchedModel = phoneModels.value.find(model => model.id == postForm.value.phoneModelId)
+        console.log('匹配的型号:', matchedModel ? matchedModel.name : '未找到匹配的型号')
+      }
+      
+      // 设置评分
+      postForm.value.rating = post.rating || 0
+      postForm.value.appearanceRating = post.appearanceRating || 0
+      postForm.value.screenRating = post.screenRating || 0
+      postForm.value.performanceRating = post.performanceRating || 0
+      postForm.value.cameraRating = post.cameraRating || 0
+      postForm.value.batteryRating = post.batteryRating || 0
+      postForm.value.systemRating = post.systemRating || 0
+      
+      // 处理照片回显
+      if (post.fileList && post.fileList.length > 0) {
+        postForm.value.fileList = [...post.fileList]
+        
+        // 准备文件列表用于展示
+        fileList.value = post.fileList.map((url, index) => {
+          return {
+            name: `已有图片${index + 1}`,
+            url: url
+          }
+        })
+        
+        console.log('准备好的文件列表:', fileList.value)
+      }
+      
+      ElMessage.success('帖子数据加载成功')
+    } else {
+      ElMessage.error('找不到该帖子数据')
+    }
+  } catch (error) {
+    console.error('加载帖子数据失败:', error)
+    ElMessage.error('加载帖子数据失败: ' + (error.message || '未知错误'))
+  }
+}
+
 // 提交评测
 const submitReview = () => {
   postFormRef.value.validate(async (valid) => {
@@ -406,17 +520,44 @@ const submitReview = () => {
 const saveReview = async () => {
   submitting.value = true
   try {
-    // 模拟上传成功
-    // await new Promise(resolve => setTimeout(resolve, 1000))
+    let response
     
-    // 这里实现真实的API调用
-    const response = await instance.post('/posts', postForm.value)
+    // 打印提交前的数据，检查fileList
+    console.log('提交前的postForm数据:', JSON.stringify(postForm.value))
+    console.log('提交前的fileList:', fileList.value)
     
-    ElMessage.success('评测发布成功！')
-    resetForm()
+    // 确保文件列表数据正确
+    // 合并已有图片和新上传的图片
+    const combinedFileList = [...postForm.value.fileList]
+    console.log('合并后的文件列表:', combinedFileList)
+    
+    // 准备提交的数据
+    const submitData = {
+      ...postForm.value,
+      fileList: combinedFileList
+    }
+    
+    if (isEditMode.value) {
+      // 编辑现有帖子
+      response = await instance.put(`/posts/${editId.value}`, submitData)
+      ElMessage.success('评测更新成功！')
+    } else {
+      // 发布新帖子
+      response = await instance.post('/posts', submitData)
+      ElMessage.success('评测发布成功！')
+    }
+    
+    // 发布成功后跳转到详情页
+    if (response && response.id) {
+      setTimeout(() => {
+        router.push(`/review/${response.id}`)
+      }, 1000)
+    } else {
+      resetForm()
+    }
   } catch (error) {
-    console.error('评测发布失败:', error)
-    ElMessage.error('评测发布失败，请稍后重试')
+    console.error(isEditMode.value ? '评测更新失败:' : '评测发布失败:', error)
+    ElMessage.error(isEditMode.value ? '评测更新失败，请稍后重试' : '评测发布失败，请稍后重试')
   } finally {
     submitting.value = false
   }
@@ -433,6 +574,7 @@ const resetForm = () => {
     rating: 0,
     content: '',
     images: [],
+    fileList: [],
     appearanceRating: 0,
     screenRating: 0,
     performanceRating: 0,
@@ -442,10 +584,11 @@ const resetForm = () => {
   }
 }
 
-// 初始化
-onMounted(() => {
-  fetchBrands()
-})
+// 图片预览
+const handlePictureCardPreview = (file) => {
+  dialogImageUrl.value = file.url
+  dialogVisible.value = true
+}
 </script>
 
 <style scoped>

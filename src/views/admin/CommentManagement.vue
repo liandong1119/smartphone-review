@@ -42,7 +42,7 @@
           <template #default="scope">
             <div class="user-info">
               <el-avatar :size="32" :src="scope.row.user.avatar"></el-avatar>
-              <span class="username">{{ scope.row.user.username }}</span>
+              <span class="username">{{ scope.row.user.nickname || scope.row.user.username }}</span>
             </div>
           </template>
         </el-table-column>
@@ -121,7 +121,7 @@
           <el-descriptions-item label="用户信息">
             <div class="user-info">
               <el-avatar :size="32" :src="currentComment.user.avatar"></el-avatar>
-              <span class="username">{{ currentComment.user.username }}</span>
+              <span class="username">{{ currentComment.user.nickname || currentComment.user.username }}</span>
               <span class="user-email">({{ currentComment.user.email }})</span>
             </div>
           </el-descriptions-item>
@@ -256,6 +256,7 @@ const fetchComments = async () => {
           user: {
             id: comment.userId,
             username: comment.username || '未知用户',
+            nickname: comment.nickname || comment.username || '未知用户',
             avatar: comment.userAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
             email: comment.email || ''
           },
@@ -395,9 +396,25 @@ const handleDelete = async (comment) => {
     
     if (response) {
       ElMessage.success('评论已删除')
-      fetchComments() // 重新获取评论列表
       
-      // 如果正在查看的评论被删除，关闭对话框
+      // 从本地列表中移除已删除的评论
+      const index = commentList.value.findIndex(item => item.id === comment.id)
+      if (index !== -1) {
+        commentList.value.splice(index, 1)
+        // 更新总数
+        total.value -= 1
+      }
+      
+      // 如果当前页已经没有数据了且不是第一页，则回到上一页
+      if (commentList.value.length === 0 && currentPage.value > 1) {
+        currentPage.value -= 1
+        fetchComments()
+      } else if (commentList.value.length < pageSize.value && total.value > 0) {
+        // 如果当前页数据不足一页且总数大于0，重新获取当前页数据
+        fetchComments()
+      }
+      
+      // 如果对话框打开，关闭它
       if (dialogVisible.value && currentComment.value && currentComment.value.id === comment.id) {
         dialogVisible.value = false
       }

@@ -6,7 +6,7 @@
         <el-card class="user-info-card">
           <div class="user-avatar-container">
             <el-avatar :size="100" :src="userInfo.avatar"></el-avatar>
-            <h2 class="username">{{ userInfo.username }}</h2>
+            <h2 class="nickname">{{ userInfo.nickname || userInfo.username }}</h2>
             <p class="user-email">{{ userInfo.email }}</p>
             <el-tag v-if="userInfo.role === 'admin'" type="danger">管理员</el-tag>
             <el-tag v-else>普通用户</el-tag>
@@ -150,7 +150,7 @@
                     <div class="favorite-info">
                       <div class="favorite-title">{{ item.title }}</div>
                       <div class="favorite-meta">
-                        <span>{{ item.author }}</span>
+                        <span>{{ item.authorNickname || item.author }}</span>
                         <span>{{ formatDate(item.collectTime) }}</span>
                       </div>
                     </div>
@@ -283,49 +283,48 @@
     </el-row>
     
     <!-- 编辑个人资料对话框 -->
-    <el-dialog v-model="profileDialogVisible" title="编辑个人资料" width="500px">
-      <el-form :model="profileForm" label-position="top">
-        <el-form-item label="用户名">
-          <el-input v-model="profileForm.username" />
+    <el-dialog
+      v-model="profileDialogVisible"
+      title="编辑个人资料"
+      width="500px"
+    >
+      <el-form
+        ref="profileFormRef"
+        :model="profileForm"
+        :rules="profileRules"
+        label-width="80px"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="profileForm.username" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="昵称" prop="nickname">
+          <el-input v-model="profileForm.nickname" placeholder="请输入昵称" />
         </el-form-item>
         <el-form-item label="头像">
-            <el-upload
-                    class="avatar-uploader"
-                    :show-file-list="false"
-                    :auto-upload="false"
-                    :on-change="handleAvatarChange"
-            >
-                <img v-if="profileForm.avatar" :src="profileForm.avatar" class="avatar"/>
-                <el-icon v-else class="avatar-uploader-icon">
-                    <Plus/>
-                </el-icon>
-            </el-upload>
-<!--          <el-upload
+          <el-upload
             class="avatar-uploader"
-            action="#"
-            :http-request="uploadAvatar"
+            action=""
             :show-file-list="false"
-            :before-upload="beforeAvatarUpload"
+            :auto-upload="false"
+            :on-change="handleAvatarChange"
           >
-            <img v-if="profileForm.avatar" :src="profileForm.avatar" class="avatar-image" />
+            <img v-if="profileForm.avatar" :src="profileForm.avatar" class="avatar" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
-          </el-upload>-->
+          </el-upload>
         </el-form-item>
         <el-form-item label="个性签名">
           <el-input
             v-model="profileForm.bio"
-            placeholder="请输入个性签名,展示更好的自己"
             type="textarea"
-            rows="4"
-            maxlength="200"
-            show-word-limit
+            :rows="3"
+            placeholder="请输入个性签名，展示更好的自己"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="profileDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="saveProfile">保存</el-button>
+          <el-button type="primary" @click="submitProfile">确定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -448,6 +447,7 @@ const phoneCountdown = ref(0)
 const passwordFormRef = ref(null)
 const emailFormRef = ref(null)
 const phoneFormRef = ref(null)
+const profileFormRef = ref(null)
 
 // 用户信息
 const userInfo = ref({
@@ -471,9 +471,22 @@ const userInfo = ref({
 // 个人资料表单
 const profileForm = ref({
   username: '',
+  nickname: '',
   avatar: '',
   bio: ''
 })
+
+// 个人资料表单验证规则
+const profileRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+  ],
+  nickname: [
+    { required: true, message: '请输入昵称', trigger: 'blur' },
+    { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
+  ]
+}
 
 // 评测列表
 const currentPage = ref(1)
@@ -854,23 +867,44 @@ const deleteComment = (comment) => {
 const editProfile = () => {
   profileForm.value = {
     username: userInfo.value.username,
+    nickname: userInfo.value.nickname,
     avatar: userInfo.value.avatar,
     bio: userInfo.value.bio
   }
   profileDialogVisible.value = true
 }
 
-// 保存个人资料
-const saveProfile = async () => {
-
-    await userApi.updateUserInfo(profileForm.value)
-  // 模拟保存操作
-  userInfo.value.username = profileForm.value.username
-  userInfo.value.avatar = profileForm.value.avatar
-  userInfo.value.bio = profileForm.value.bio
-  
-  ElMessage.success('个人资料已更新')
-  profileDialogVisible.value = false
+// 提交个人资料表单
+const submitProfile = () => {
+  profileFormRef.value.validate(async (valid) => {
+    if (valid) {
+      try {
+        const response = await userApi.updateUserInfo({
+          username: profileForm.value.username,
+          nickname: profileForm.value.nickname,
+          avatar: profileForm.value.avatar,
+          bio: profileForm.value.bio
+        })
+        
+        if (response) {
+          // 更新本地用户信息
+          userInfo.value = {
+            ...userInfo.value,
+            username: profileForm.value.username,
+            nickname: profileForm.value.nickname,
+            avatar: profileForm.value.avatar,
+            bio: profileForm.value.bio
+          }
+          
+          ElMessage.success('个人资料已更新')
+          profileDialogVisible.value = false
+        }
+      } catch (error) {
+        console.error('更新个人资料失败:', error)
+        ElMessage.error('更新个人资料失败')
+      }
+    }
+  })
 }
 
 // 头像上传相关
@@ -1212,7 +1246,7 @@ onMounted(async () => {
   padding: 20px 0;
 }
 
-.username {
+.nickname {
   margin: 15px 0 5px;
   font-size: 18px;
 }

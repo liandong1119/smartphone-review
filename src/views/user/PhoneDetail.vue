@@ -117,16 +117,10 @@
                 <div v-for="review in reviews" :key="review.id" class="review-card">
                   <div class="review-header">
                     <div class="review-user-info">
-                      <el-avatar :size="40" :src="review.userAvatar" @click="navigateToUserProfile(review.userId)" class="clickable-avatar"></el-avatar>
-                      <div class="review-user-meta">
-                        <div class="review-username clickable-username" @click="navigateToUserProfile(review.userId)">{{ review.username }}</div>
-                        <div class="review-date">{{ formatDate(review.createTime) }}</div>
-                      </div>
+                      <el-avatar :size="32" :src="review.userAvatar || defaultAvatar" @click="navigateToUserProfile(review.userId)"></el-avatar>
+                      <div class="review-username clickable-username" @click="navigateToUserProfile(review.userId)">{{ review.nickname || review.username }}</div>
                     </div>
-                    <div class="review-rating">
-                      <span class="rating-value">{{ review.rating.toFixed(1) }}</span>
-                      <el-rate v-model="review.rating" disabled :colors="['#99A9BF', '#F7BA2A', '#FF9900']" />
-                    </div>
+                    <div class="review-time">{{ formatDate(review.createTime) }}</div>
                   </div>
                   
                   <div class="review-title" @click="viewFullReview(review.id)">{{ review.title }}</div>
@@ -328,6 +322,25 @@ const fetchPhoneReviews = async () => {
     if (response) {
       reviews.value = response.records || response
       totalReviews.value = response.total || (response.records ? response.records.length : response.length)
+      
+      // 处理评测数据
+      reviews.value.forEach(review => {
+        // 处理用户相关字段
+        if (review.user) {
+          review.username = review.user.username
+          review.nickname = review.user.nickname
+          review.userAvatar = review.user.avatar
+          review.userId = review.user.id
+        }
+        
+        // 确保评论数字段一致
+        review.comments = review.commentCount || review.comments || 0
+        
+        // 确保必要的字段存在
+        review.likes = review.likes || 0
+        review.favorites = review.favorites || 0
+        review.views = review.views || 0
+      })
     } else {
       ElMessage.error('获取评测列表失败')
     }
@@ -867,10 +880,6 @@ onMounted(async () => {
   align-items: center;
 }
 
-.review-user-meta {
-  margin-left: 10px;
-}
-
 .review-username {
   font-weight: 500;
   font-size: 15px;
@@ -887,7 +896,7 @@ onMounted(async () => {
   text-decoration: underline;
 }
 
-.review-date {
+.review-time {
   font-size: 12px;
   color: #909399;
 }

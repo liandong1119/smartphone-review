@@ -19,7 +19,7 @@
             <el-dropdown trigger="click">
               <div class="avatar-wrapper">
                 <el-avatar :size="36" :src="userAvatar"></el-avatar>
-                <span class="username-display">{{ username }}</span>
+                <span class="username-display">{{ nickname || username }}</span>
                 <el-icon><ArrowDown /></el-icon>
               </div>
               <template #dropdown>
@@ -121,14 +121,14 @@
           <div class="user-info-header">
             <el-avatar :size="42" ><img :src="userAvatar"/></el-avatar>
             <div class="user-meta">
-              <div class="username">{{ isLoggedIn ? username : '未登录' }}</div>
+              <div class="username">{{ isLoggedIn ? (nickname || username) : '未登录' }}</div>
               <div class="join-time">{{ isLoggedIn ? `注册于${registeTime}` : '请登录账号' }}</div>
             </div>
           </div>
           
           <!-- 添加个性签名 -->
           <div class="user-signature" v-if="isLoggedIn">
-              "{{ bio }}"
+              "{{ bio || '暂无个性签名' }}"
           </div>
           
           <!-- 添加用户统计信息 -->
@@ -197,6 +197,7 @@ const favoriteCount = computed(() => userStore.userStats.favoriteCount || 0)
 // 用户登录状态（从store中获取）
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const username = computed(() => userStore.userInfo?.username || '用户')
+const nickname = computed(() => userStore.userInfo?.nickname || '')
 const userAvatar = computed(() => userStore.userInfo?.avatar || 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
 const isAdmin = computed(() => userStore.isAdmin)
 const registeTime = computed(() => formatDate(userStore.userInfo?.createTime))

@@ -57,7 +57,7 @@
                             <div class="post-meta">
                                 <div class="post-author">
                                     <el-avatar :size="24" :src="post.userAvatar"></el-avatar>
-                                    <span>{{ post.username || '匿名用户' }}</span>
+                                    <span>{{ post.nickname || post.username || '匿名用户' }}</span>
                                 </div>
                                 <div class="post-stats">
                                     <span><el-icon><View/></el-icon> {{ post.views || 0 }}</span>
@@ -147,6 +147,25 @@ const fetchBrandPosts = async () => {
             posts.value = []
             total.value = 0
         }
+
+        // 对返回的数据做一些处理，确保字段名的一致性
+        posts.value.forEach(post => {
+            // 处理用户相关字段
+            if (post.user) {
+                post.username = post.user.username
+                post.nickname = post.user.nickname
+                post.userAvatar = post.user.avatar
+                post.userId = post.user.id
+            }
+            
+            // 确保评论数字段一致
+            post.comments = post.commentCount || post.comments || 0
+            
+            // 确保必要的字段存在
+            post.likes = post.likes || 0
+            post.favorites = post.favorites || 0
+            post.views = post.views || 0
+        })
     } catch (error) {
         console.error('获取品牌评测列表失败:', error)
         ElMessage.error('获取评测列表失败')

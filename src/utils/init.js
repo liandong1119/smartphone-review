@@ -33,6 +33,42 @@ export const initPostState = async () => {
   return postStore
 }
 
+// 全局更新所有文章状态
+export const updateAllPostsState = () => {
+  const postStore = usePostStore()
+  postStore.initLikesAndFavorites()
+  
+  // 更新所有相关文章列表的点赞和收藏状态
+  if (postStore.postList && postStore.postList.length > 0) {
+    postStore.postList.forEach(post => {
+      post.isLiked = !!postStore.likedPosts[post.id]
+      post.isFavorited = !!postStore.favoritedPosts[post.id]
+    })
+  }
+  
+  // 更新当前文章
+  if (postStore.currentPost) {
+    postStore.currentPost.isLiked = !!postStore.likedPosts[postStore.currentPost.id]
+    postStore.currentPost.isFavorited = !!postStore.favoritedPosts[postStore.currentPost.id]
+  }
+  
+  // 更新用户发布的文章
+  if (postStore.userPosts && postStore.userPosts.length > 0) {
+    postStore.userPosts.forEach(post => {
+      post.isLiked = !!postStore.likedPosts[post.id]
+      post.isFavorited = !!postStore.favoritedPosts[post.id]
+    })
+  }
+  
+  // 更新用户收藏的文章
+  if (postStore.userFavorites && postStore.userFavorites.length > 0) {
+    postStore.userFavorites.forEach(post => {
+      post.isLiked = !!postStore.likedPosts[post.id]
+      post.isFavorited = !!postStore.favoritedPosts[post.id]
+    })
+  }
+}
+
 // 初始化通知状态
 export const initNotificationState = async () => {
   const notificationStore = useNotificationStore()

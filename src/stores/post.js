@@ -64,11 +64,11 @@ export const usePostStore = defineStore('post', () => {
         postList.value = result.records || result
         total.value = result.total || result.length
         
-        // // 更新点赞和收藏状态
-        // postList.value.forEach(post => {
-        //   post.isLiked = !!likedPosts.value[post.id]
-        //   post.isFavorited = !!favoritedPosts.value[post.id]
-        // })
+        // 更新点赞和收藏状态
+        postList.value.forEach(post => {
+          post.isLiked = !!likedPosts.value[post.id]
+          post.isFavorited = !!favoritedPosts.value[post.id]
+        })
         
         console.log('Processed posts:', postList.value.slice(0, 2))
       }
@@ -90,18 +90,20 @@ export const usePostStore = defineStore('post', () => {
       if (post) {
         console.log(`获取到帖子详情:`, post)
         // 更新点赞和收藏状态
-        // post.isLiked = post.isLiked
-        // post.isFavorited = !!favoritedPosts.value[post.id]
+        post.isLiked = !!likedPosts.value[post.id]
+        post.isFavorited = !!favoritedPosts.value[post.id]
 
         currentPost.value = post
-        currentPost.value.likes  = post.likeCount
+        currentPost.value.likes = post.likeCount
         currentPost.value.favorites = post.favoriteCount
         console.log(`帖子详情处理完成，当前帖子:`, {
           id: post.id,
           title: post.title,
           brand: post.brand,
           phoneModel: post.phoneModel,
-          username: post.username
+          username: post.username,
+          isLiked: post.isLiked,
+          isFavorited: post.isFavorited
         })
       } else {
         console.error(`未能获取到ID为${id}的帖子详情`)

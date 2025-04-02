@@ -338,7 +338,23 @@ const handleDelete = async (row) => {
     const response = await adminApi.deleteUser(row.id)
     if (response) {
       ElMessage.success('删除成功')
-      fetchUsers()
+      
+      // 从本地列表中移除已删除的用户
+      const index = userList.value.findIndex(item => item.id === row.id)
+      if (index !== -1) {
+        userList.value.splice(index, 1)
+        // 更新总数
+        total.value -= 1
+      }
+      
+      // 如果当前页已经没有数据了且不是第一页，则回到上一页
+      if (userList.value.length === 0 && currentPage.value > 1) {
+        currentPage.value -= 1
+        fetchUsers()
+      } else if (userList.value.length < pageSize.value && total.value > 0) {
+        // 如果当前页数据不足一页且总数大于0，重新获取当前页数据
+        fetchUsers()
+      }
     }
   } catch (error) {
     if (error !== 'cancel') {
